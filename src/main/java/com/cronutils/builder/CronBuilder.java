@@ -23,8 +23,10 @@ import com.cronutils.model.field.constraint.FieldConstraints;
 import com.cronutils.model.field.definition.FieldDefinition;
 import com.cronutils.model.field.expression.FieldExpression;
 import com.cronutils.model.field.expression.On;
+import com.cronutils.model.field.expression.QuestionMark;
 import com.cronutils.model.field.expression.visitor.ValidationFieldExpressionVisitor;
 import com.cronutils.model.field.value.IntegerFieldValue;
+import com.cronutils.model.field.value.SpecialChar;
 import com.cronutils.utils.VisibleForTesting;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.cronutils.model.field.CronFieldName.*;
+import static com.cronutils.model.field.expression.FieldExpression.always;
 import static com.cronutils.utils.Preconditions.checkState;
 
 public class CronBuilder {
@@ -129,8 +132,8 @@ public class CronBuilder {
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(1)),
                 new On(new IntegerFieldValue(1)),
-                FieldExpression.questionMark(),
-                FieldExpression.always()
+                resolveExpr(definition, DAY_OF_WEEK, FieldExpression.questionMark()),
+                always()
         );
     }
 
@@ -145,9 +148,9 @@ public class CronBuilder {
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(1)),
-                FieldExpression.always(),
-                FieldExpression.questionMark(),
-                FieldExpression.always()
+                always(),
+                resolveExpr(definition, DAY_OF_WEEK, FieldExpression.questionMark()),
+                always()
         );
     }
 
@@ -157,10 +160,10 @@ public class CronBuilder {
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(0)),
-                FieldExpression.questionMark(),
-                FieldExpression.always(),
+                resolveExpr(definition, DAY_OF_MONTH, FieldExpression.questionMark()),
+                always(),
                 new On(new IntegerFieldValue(0)),
-                FieldExpression.always()
+                always()
         );
     }
 
@@ -170,10 +173,10 @@ public class CronBuilder {
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(0)),
-                FieldExpression.always(),
-                FieldExpression.always(),
-                FieldExpression.questionMark(),
-                FieldExpression.always()
+                always(),
+                always(),
+                resolveExpr(definition, DAY_OF_WEEK, FieldExpression.questionMark()),
+                always()
         );
     }
 
@@ -186,16 +189,26 @@ public class CronBuilder {
                 definition,
                 new On(new IntegerFieldValue(0)),
                 new On(new IntegerFieldValue(0)),
-                FieldExpression.always(),
-                FieldExpression.questionMark(),
-                FieldExpression.always(),
-                FieldExpression.always(),
-                FieldExpression.always()
+                always(),
+                resolveExpr(definition, DAY_OF_MONTH, FieldExpression.questionMark()),
+                always(),
+                always(),
+                always()
         );
     }
 
     public static Cron reboot(final CronDefinition definition){
         return new RebootCron(definition);
+    }
+
+    private static FieldExpression resolveExpr(final CronDefinition definition, final CronFieldName name, final FieldExpression expression) {
+        if (expression instanceof QuestionMark) {
+            final FieldDefinition fieldDefinition = definition.getFieldDefinition(name);
+            if (fieldDefinition == null || !fieldDefinition.getConstraints().getSpecialChars().contains(SpecialChar.QUESTION_MARK)) {
+                return always();
+            }
+        }
+        return expression;
     }
 
     @VisibleForTesting
