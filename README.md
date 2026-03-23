@@ -6,12 +6,10 @@ cron-utils is a Java library to define, parse, validate, migrate crons as well a
 
 **Download**
 
-cron-utils is available on [Maven central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.cronutils%22) repository.
-
     <dependency>
-        <groupId>com.cronutils</groupId>
-        <artifactId>cron-utils</artifactId>
-        <version>9.2.1</version>
+        <groupId>io.github.projectunified.cronutils</groupId>
+        <artifactId>cron-utils-core</artifactId>
+        <version>9.2.2-SNAPSHOT</version>
     </dependency>
 
 For Android developers, cron-utils 7.0.0 assumes Android 26+. For earlier Android versions consider using cron-utils 6.0.6.
@@ -78,7 +76,7 @@ cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(QUARTZ);
 ***Build a cron expression***
 ```java 
 // Create a cron expression. CronMigrator will ensure you remain cron provider agnostic
-import static com.cronutils.model.field.expression.FieldExpressionFactory.*;
+import static io.github.projectunified.cronutils.model.field.expression.FieldExpressionFactory.*;
 
 Cron cron = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ))
     .withYear(always())
@@ -180,9 +178,9 @@ String formattedDateTime = formatter.print(lastExecution);
 
 We provide a simple CLI interface to use cron-utils right from console, without writing a new project! The CLI is a satellite project, available at [cron-utils-cli](https://github.com/jmrozanec/cron-utils-cli)
 
-- Usage: `java -jar cron-utils.jar com.cronutils.cli.CronUtilsCLI --validate -f [CRON4J|QUARTZ|UNIX] -e '<cron expression>'`
+- Usage: `java -jar cron-utils-core.jar io.github.projectunified.cronutils.cli.CronUtilsCLI --validate -f [CRON4J|QUARTZ|UNIX] -e '<cron expression>'`
 
-- Example: `java -jar cron-utils.jar com.cronutils.cli.CronUtilsCLI --validate -f UNIX -e '* 1 * * *'`
+- Example: `java -jar cron-utils-core.jar io.github.projectunified.cronutils.cli.CronUtilsCLI --validate -f UNIX -e '* 1 * * *'`
 
 If you want a standalone jar without requiring the 'cp', build an uber jar with :
 ```bash
