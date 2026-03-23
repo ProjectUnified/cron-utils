@@ -4,11 +4,6 @@ _We define crons. And support them._
 
 cron-utils is a Java library to define, parse, validate, migrate crons as well as get human readable descriptions for them. The project follows the [Semantic Versioning Convention](https://semver.org/), provides OSGi metadata and uses Apache 2.0 license.
 
-[![Gitter Chat](https://img.shields.io/badge/chat-online-brightgreen.svg)](https://gitter.im/jmrozanec/cron-utils)
-[![Build Status](https://travis-ci.org/jmrozanec/cron-utils.png?branch=master)](https://travis-ci.org/jmrozanec/cron-utils)
-[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=cron-utils&metric=coverage)](https://sonarcloud.io/dashboard/index/cron-utils)
-
-
 **Download**
 
 cron-utils is available on [Maven central](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.cronutils%22) repository.
