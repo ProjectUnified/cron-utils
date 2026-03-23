@@ -12,8 +12,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.Month;
@@ -30,10 +28,7 @@ public class ExecutionTimeCron4jIntegrationTest {
     private static final String EVERY_15_MINUTES = "0/15 * * * *";
     private static final String EVERY_2_HOURS = "0 0/2 * * *";
     private static final String EVERY_WEEKDAY_AT_6 = "0 6 * * MON-FRI";
-    private static final Logger log = LoggerFactory.getLogger(ExecutionTimeCron4jIntegrationTest.class);
     private static final String NEXT_EXECUTION_NOT_PRESENT_ERROR = "next execution not present";
-    private static final String LOG_LAST_RUN = "LastRun = [{}]";
-    private static final String LOG_NEXT_RUN = "NextRun = [{}]";
 
     @BeforeEach
     public void setUp() {
@@ -60,8 +55,6 @@ public class ExecutionTimeCron4jIntegrationTest {
             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
             if (nextExecution.isPresent()) {
                 final ZonedDateTime nextRun = nextExecution.get();
-                log.info(LOG_LAST_RUN, lastRun);
-                log.info(LOG_NEXT_RUN, nextRun);
 
                 assertNotEquals(DayOfWeek.SATURDAY, nextRun.getDayOfWeek());
                 assertNotEquals(DayOfWeek.SUNDAY, nextRun.getDayOfWeek());
@@ -88,8 +81,6 @@ public class ExecutionTimeCron4jIntegrationTest {
             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
             if (nextExecution.isPresent()) {
                 final ZonedDateTime nextRun = nextExecution.get();
-                log.info(LOG_LAST_RUN, lastRun);
-                log.info(LOG_NEXT_RUN, nextRun);
 
                 assertTrue(nextRun.getHour() % 2 == 0, String.format("Hour is %s", nextRun.getHour()));
                 assertTrue(lastRun.isBefore(nextRun), String.format("Last run is before next one: %s", lastRun.isBefore(nextRun)));
@@ -112,8 +103,6 @@ public class ExecutionTimeCron4jIntegrationTest {
             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
             if (nextExecution.isPresent()) {
                 final ZonedDateTime nextRun = nextExecution.get();
-                log.info(LOG_LAST_RUN, lastRun);
-                log.info(LOG_NEXT_RUN, nextRun);
 
                 assertTrue(nextRun.getHour() % 2 == 0, String.format("Hour is %s", nextRun.getHour()));
                 assertTrue(lastRun.isBefore(nextRun), String.format("Last run is before next one: %s", lastRun.isBefore(nextRun)));
@@ -139,8 +128,6 @@ public class ExecutionTimeCron4jIntegrationTest {
             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
             if (nextExecution.isPresent()) {
                 final ZonedDateTime nextRun = nextExecution.get();
-                log.debug(LOG_LAST_RUN, lastRun);
-                log.debug(LOG_NEXT_RUN, nextRun);
 
                 assertTrue(nextRun.getMinute() % 15 == 0);
                 assertTrue(lastRun.isBefore(nextRun));
@@ -246,14 +233,11 @@ public class ExecutionTimeCron4jIntegrationTest {
         final int dayOfMonth = random.nextInt(Month.of(month).maxLength()) + 1;
         final String expression = String.format("0 0 %d %d %d", dayOfMonth, month, dayOfWeekValue);
         final ExecutionTime executionTime = ExecutionTime.forCron(cron4jCronParser.parse(expression));
-        log.debug("cron4j expression: {}", expression);
         ZonedDateTime next = ZonedDateTime.now();
-        log.debug("Start date: {}", next);
         for (int i = 1; i <= 20; i++) {
             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(next);
             assert (nextExecution.isPresent());
             next = nextExecution.get();
-            log.debug("Execution #{} date: {}", i, next);
             assertEquals(dayOfWeek, next.getDayOfWeek(), "Incorrect day of the week");
             assertEquals(dayOfMonth, next.getDayOfMonth(), "Incorrect day of the month");
             assertEquals(month, next.getMonthValue(), "Incorrect month");

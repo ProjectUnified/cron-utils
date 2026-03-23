@@ -4,8 +4,6 @@ import com.cronutils.model.CronType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -17,8 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CronValidatorTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CronValidatorTest.class);
 
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
@@ -44,7 +40,7 @@ public class CronValidatorTest {
     public void validateExamples(String expression, boolean valid) {
         TestPojo testPojo = new TestPojo(expression);
         Set<ConstraintViolation<TestPojo>> violations = validator.validate(testPojo);
-        violations.stream().map(ConstraintViolation::getMessage).forEach(LOGGER::info);
+        // violations.stream().map(ConstraintViolation::getMessage).forEach(System.out::println);
 
         if (valid) {
             assertTrue(violations.isEmpty());

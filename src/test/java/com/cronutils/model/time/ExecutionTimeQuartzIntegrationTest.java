@@ -20,8 +20,6 @@ import com.cronutils.parser.CronParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.time.*;
@@ -40,7 +38,6 @@ public class ExecutionTimeQuartzIntegrationTest {
     private CronParser parser;
     private static final String EVERY_SECOND = "* * * * * ? *";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionTimeQuartzIntegrationTest.class);
     private static final String NEXT_EXECUTION_NOT_PRESENT_ERROR = "next execution was not present";
     private static final String LAST_EXECUTION_NOT_PRESENT_ERROR = "last execution was not present";
     private static final String DURATION_NOT_PRESENT_ERROR = "duration was not present";
@@ -718,10 +715,7 @@ public class ExecutionTimeQuartzIntegrationTest {
      */
     @Test
     public void lastExecutionDec31NotFail() {
-        final ExecutionTime et = ExecutionTime.forCron(parser.parse("0 0 12 31 12 ? *"));
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(et.lastExecution(ZonedDateTime.now()).toString());
-        }
+        ExecutionTime.forCron(parser.parse("0 0 12 31 12 ? *"));
     }
 
     /**
@@ -934,7 +928,6 @@ public class ExecutionTimeQuartzIntegrationTest {
             final ZonedDateTime expectedNextRun) {
 
         final String testCaseDescription = "cron expression '" + cronExpression + "' with zdt " + lastRun;
-        LOGGER.debug("TESTING: " + testCaseDescription);
         final Cron cron = parser.parse(cronExpression);
         final ExecutionTime executionTime = ExecutionTime.forCron(cron);
         try {

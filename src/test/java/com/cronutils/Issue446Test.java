@@ -7,8 +7,6 @@ import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.*;
 import java.util.Optional;
@@ -21,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 public class Issue446Test {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Issue446Test.class);
     private static final CronDefinition definition = CronDefinitionBuilder.defineCron()
             .withMinutes().and()
             .withHours().and()
@@ -39,7 +36,6 @@ public class Issue446Test {
         LocalDateTime dayOfApril = LocalDateTime.of(2020, 4, 25, 0, 0);
         Clock clock = Clock.fixed(dayOfApril.toInstant(ZoneOffset.UTC), ZoneId.systemDefault());
         ZonedDateTime dayOfAprilInLocalTimezone = ZonedDateTime.now(clock);
-        LOGGER.info("now: " + dayOfAprilInLocalTimezone);
         Cron cron = getEveryMonthFromNow(dayOfAprilInLocalTimezone, 6).instance();
 
         ZonedDateTime nextRun = nextRun(cron, dayOfAprilInLocalTimezone); // first run
@@ -70,7 +66,6 @@ public class Issue446Test {
         LocalDateTime daylightSaving2020 = LocalDateTime.of(2020, 10, 25, 1, 10);
         Clock clock = Clock.fixed(daylightSaving2020.toInstant(ZoneOffset.ofHours(2)),ZoneId.of("Europe/Rome"));
         ZonedDateTime daylightSaving2020InLocalTimezone = ZonedDateTime.now(clock);
-        LOGGER.info("\nnow: " + daylightSaving2020InLocalTimezone);
         Cron cron = getEvery30Minute(daylightSaving2020InLocalTimezone).instance();
 
         ZonedDateTime nextRun = nextRun(cron, daylightSaving2020InLocalTimezone); // first run
@@ -106,7 +101,6 @@ public class Issue446Test {
         LocalDateTime startDay = LocalDateTime.of(2020, 10, 24, 1, 0); // Day before Daylight saving
         Clock clock = Clock.fixed(startDay.toInstant(ZoneOffset.ofHours(2)), ZoneId.of("Europe/Rome"));
         ZonedDateTime daylightSaving2020InLocalTimezone = ZonedDateTime.now(clock);
-        LOGGER.info("\nnow: " + daylightSaving2020InLocalTimezone);
         Cron cron = getEveryHour(daylightSaving2020InLocalTimezone).instance();
 
         ZonedDateTime nextRun = nextRun(cron, daylightSaving2020InLocalTimezone);
@@ -121,7 +115,6 @@ public class Issue446Test {
         startDay = LocalDateTime.of(2020, 10, 25, 1, 0); // Daylight saving
         clock = Clock.fixed(startDay.toInstant(ZoneOffset.ofHours(2)), ZoneId.of("Europe/Rome"));
         daylightSaving2020InLocalTimezone = ZonedDateTime.now(clock);
-        LOGGER.info("\nnow: " + daylightSaving2020InLocalTimezone);
         cron = getEveryHour(daylightSaving2020InLocalTimezone).instance();
 
         nextRun = nextRun(cron, daylightSaving2020InLocalTimezone); // first run
@@ -166,7 +159,6 @@ public class Issue446Test {
         if (!next.isPresent()) {
             fail();
         }
-        LOGGER.info("Calculated next run at " + next.get());
         return next.get();
     }
 }

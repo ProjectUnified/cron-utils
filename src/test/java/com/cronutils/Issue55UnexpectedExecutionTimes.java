@@ -23,8 +23,6 @@ import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -37,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Issue55UnexpectedExecutionTimes {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Issue55UnexpectedExecutionTimes.class);
     private CronDefinition cronDefinition;
 
     /**
@@ -78,15 +75,12 @@ public class Issue55UnexpectedExecutionTimes {
      */
     @Test
     public void testOnceEveryThreeDaysNoInstantsWithinTwoDays() {
-        LOGGER.debug("TEST1 - expecting 0 instants");
         final ZonedDateTime startTime = ZonedDateTime.of(0, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
         final ZonedDateTime endTime = startTime.plusDays(2);
         final CronParser parser = new CronParser(cronDefinition);
         final Cron cron = parser.parse("0 0 */3 * ?");
         final ExecutionTime executionTime = ExecutionTime.forCron(cron);
         final List<Instant> instants = getInstants(executionTime, startTime, endTime);
-        LOGGER.debug("instants.size() == {}", instants.size());
-        LOGGER.debug("instants: {}", instants);
         assertEquals(0, instants.size());
     }
 
@@ -95,15 +89,12 @@ public class Issue55UnexpectedExecutionTimes {
      */
     @Test
     public void testOnceAMonthTwelveInstantsInYear() {
-        LOGGER.debug("TEST2 - expecting 12 instants");
         final ZonedDateTime startTime = ZonedDateTime.of(0, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
         final ZonedDateTime endTime = startTime.plusYears(1);
         final CronParser parser = new CronParser(cronDefinition);
         final Cron cron = parser.parse("0 12 L * ?");
         final ExecutionTime executionTime = ExecutionTime.forCron(cron);
         final List<Instant> instants = getInstants(executionTime, startTime, endTime);
-        LOGGER.debug("instants.size() == {}", instants.size());
-        LOGGER.debug("instants: {}", instants);
         assertEquals(12, instants.size());
     }
 

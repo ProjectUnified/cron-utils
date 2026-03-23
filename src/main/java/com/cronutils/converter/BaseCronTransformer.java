@@ -13,9 +13,6 @@
 
 package com.cronutils.converter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,9 +21,6 @@ import java.util.Map;
 import com.cronutils.utils.StringUtils;
 
 public abstract class BaseCronTransformer {
-
-	protected static final Logger LOGGER = LoggerFactory
-			.getLogger(BaseCronTransformer.class);
 
 	protected String[] cronParts;
 

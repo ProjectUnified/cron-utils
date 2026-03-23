@@ -7,8 +7,6 @@ import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
@@ -20,8 +18,6 @@ import static com.cronutils.model.field.expression.FieldExpressionFactory.on;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class Issue480Test {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Issue480Test.class);
 
     private static final CronDefinition definition = CronDefinitionBuilder.defineCron()
             .withMinutes().and()
@@ -42,16 +38,13 @@ public class Issue480Test {
         assertEquals(sunday.getDayOfWeek(), DayOfWeek.SUNDAY);
         Clock clock = Clock.fixed(sunday.toInstant(ZoneOffset.UTC), ZoneId.systemDefault());
         ZonedDateTime now = ZonedDateTime.now(clock);
-        LOGGER.info("Now: {}", now);
 
         Cron cron = getWeekly(now).instance();
         ZonedDateTime nextRun;
 
         final ZonedDateTime nowPlusWeek = now.plusWeeks(1);
-        LOGGER.info("now + 1 week: {}", nowPlusWeek);
 
         nextRun = nextRun(cron, now); // first run
-        LOGGER.info("nextRun: {}", nextRun);
 
         assertTrue(nextRun.truncatedTo(ChronoUnit.MINUTES)
                 .isEqual(nowPlusWeek.truncatedTo(ChronoUnit.MINUTES)));
@@ -74,7 +67,6 @@ public class Issue480Test {
         if (!next.isPresent()) {
             fail();
         }
-        LOGGER.info("Calculated next run at {}", next.get());
         return next.get();
     }
 
