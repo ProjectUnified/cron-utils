@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.cronutils.model.field.expression.FieldExpression.always;
+import static com.cronutils.model.field.expression.FieldExpression.questionMark;
 import static com.cronutils.model.field.expression.FieldExpressionFactory.on;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,9 +24,9 @@ class CronParserNicknameTest {
                 //copied from CronDefinitionBuilder.unixCrontab()
                 .withMinutes().withValidRange(0, 59).withStrictRange().and()
                 .withHours().withValidRange(0, 23).withStrictRange().and()
-                .withDayOfMonth().withValidRange(1, 31).withStrictRange().and()
+                .withDayOfMonth().withValidRange(1, 31).supportsQuestionMark().withStrictRange().and()
                 .withMonth().withValidRange(1, 12).withStrictRange().and()
-                .withDayOfWeek().withValidRange(0, 7).withMondayDoWValue(1).withIntMapping(7, 0).withStrictRange().and()
+                .withDayOfWeek().withValidRange(0, 7).withMondayDoWValue(1).withIntMapping(7, 0).supportsQuestionMark().withStrictRange().and()
                 //add support for all custom nicknames
                 .withSupportedNicknameYearly().withSupportedNicknameAnnually()
                 .withSupportedNicknameMonthly().withSupportedNicknameWeekly()
@@ -42,7 +43,7 @@ class CronParserNicknameTest {
                 .withHour(on(0))
                 .withDoM(on(1))
                 .withMonth(on(1))
-                .withDoW(always())
+                .withDoW(questionMark())
                 .instance();
         Cron parsed = parser.parse("@yearly");
         assertTrue(parsed.equivalent(expected));
@@ -55,7 +56,7 @@ class CronParserNicknameTest {
                 .withHour(on(0))
                 .withDoM(on(1))
                 .withMonth(on(1))
-                .withDoW(always())
+                .withDoW(questionMark())
                 .instance();
         Cron parsed = parser.parse("@annually");
         assertTrue(parsed.equivalent(expected));
@@ -68,7 +69,7 @@ class CronParserNicknameTest {
                 .withHour(on(0))
                 .withDoM(on(1))
                 .withMonth(always())
-                .withDoW(always())
+                .withDoW(questionMark())
                 .instance();
         Cron parsed = parser.parse("@monthly");
         assertTrue(parsed.equivalent(expected));
@@ -79,7 +80,7 @@ class CronParserNicknameTest {
         Cron expected = CronBuilder.cron(definitionWithNicknames)
                 .withMinute(on(0))
                 .withHour(on(0))
-                .withDoM(always())
+                .withDoM(questionMark())
                 .withMonth(always())
                 .withDoW(on(0))
                 .instance();
@@ -95,7 +96,7 @@ class CronParserNicknameTest {
                 .withHour(on(0))
                 .withDoM(always())
                 .withMonth(always())
-                .withDoW(always())
+                .withDoW(questionMark())
                 .instance();
         Cron parsed = parser.parse("@midnight");
         assertTrue(parsed.equivalent(expected));
@@ -108,7 +109,7 @@ class CronParserNicknameTest {
                 .withHour(on(0))
                 .withDoM(always())
                 .withMonth(always())
-                .withDoW(always())
+                .withDoW(questionMark())
                 .instance();
         Cron parsed = parser.parse("@daily");
         assertTrue(parsed.equivalent(expected));
@@ -119,7 +120,7 @@ class CronParserNicknameTest {
         Cron expected = CronBuilder.cron(definitionWithNicknames)
                 .withMinute(on(0))
                 .withHour(always())
-                .withDoM(always())
+                .withDoM(questionMark())
                 .withMonth(always())
                 .withDoW(always())
                 .instance();
