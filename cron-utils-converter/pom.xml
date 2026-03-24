@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.github.projectunified.cronutils</groupId>
+        <groupId>io.github.projectunified</groupId>
         <artifactId>cron-utils</artifactId>
         <version>9.2.2-SNAPSHOT</version>
     </parent>

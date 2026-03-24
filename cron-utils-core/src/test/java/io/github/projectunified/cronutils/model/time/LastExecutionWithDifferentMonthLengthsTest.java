@@ -23,11 +23,11 @@ public class LastExecutionWithDifferentMonthLengthsTest {
 
     @Test
     void shouldFindCorrectLastExecTimeWhenDaysOfMonthsAreDifferent() {
-        final var parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
+        final CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         // last run is in a month with 31 days
-        final var execTime = ExecutionTime.forCron(parser.parse("0 30 23 * * ? 2022"));
+        final ExecutionTime execTime = ExecutionTime.forCron(parser.parse("0 30 23 * * ? 2022"));
 
-        final var lastExec = execTime.lastExecution(
+        final Optional<ZonedDateTime> lastExec = execTime.lastExecution(
             Instant.parse("2023-11-24T12:00:00Z").atZone(ZoneId.of("UTC")));
         
         assertTrue(lastExec.isPresent(), "Should find a last execution");
@@ -37,18 +37,18 @@ public class LastExecutionWithDifferentMonthLengthsTest {
             "Last execution should be the last possible time in 2022"
         );
 
-        final var nextExec = execTime.nextExecution(lastExec.get());
+        final Optional<ZonedDateTime> nextExec = execTime.nextExecution(lastExec.get());
         assertTrue(nextExec.isEmpty(), "Should not find next execution as cron ended in 2022");
     }
 
     @Test
     void shouldHandleLastDayOfMonthTransitions() {
-        final var parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
+        final CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         // Run at 23:30 on the last day of every month in 2022
-        final var execTime = ExecutionTime.forCron(parser.parse("0 30 23 L * ? 2022"));
+        final ExecutionTime execTime = ExecutionTime.forCron(parser.parse("0 30 23 L * ? 2022"));
 
         // Check from a month with 30 days (November)
-        final var novemberCheck = execTime.lastExecution(
+        final Optional<ZonedDateTime> novemberCheck = execTime.lastExecution(
             Instant.parse("2023-11-24T12:00:00Z").atZone(ZoneId.of("UTC")));
         
         assertTrue(novemberCheck.isPresent(), "Should find a last execution from November");
@@ -59,7 +59,7 @@ public class LastExecutionWithDifferentMonthLengthsTest {
         );
 
         // Check from a month with 31 days (October)
-        final var octoberCheck = execTime.lastExecution(
+        final Optional<ZonedDateTime> octoberCheck = execTime.lastExecution(
             Instant.parse("2023-10-24T12:00:00Z").atZone(ZoneId.of("UTC")));
         
         assertTrue(octoberCheck.isPresent(), "Should find a last execution from October");
@@ -72,9 +72,9 @@ public class LastExecutionWithDifferentMonthLengthsTest {
 
     @Test
     void shouldHandleSpecificDayAcrossMonths() {
-        final var parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
+        final CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         // Run at 23:30 on the 31st of every month in 2022
-        final var execTime = ExecutionTime.forCron(parser.parse("0 30 23 31 * ? 2022"));
+        final ExecutionTime execTime = ExecutionTime.forCron(parser.parse("0 30 23 31 * ? 2022"));
 
         // Test cases for different months
         Stream.of(
@@ -82,10 +82,10 @@ public class LastExecutionWithDifferentMonthLengthsTest {
             Arguments.of("2023-10-24T12:00:00Z", "2022-12-31T23:30:00Z"),
             Arguments.of("2023-09-24T12:00:00Z", "2022-12-31T23:30:00Z")
         ).forEach(args -> {
-            final var checkTime = Instant.parse((String) args.get()[0]).atZone(ZoneId.of("UTC"));
-            final var expectedLastExec = (String) args.get()[1];
+            final ZonedDateTime checkTime = Instant.parse((String) args.get()[0]).atZone(ZoneId.of("UTC"));
+            final String expectedLastExec = (String) args.get()[1];
             
-            final var lastExec = execTime.lastExecution(checkTime);
+            final Optional<ZonedDateTime> lastExec = execTime.lastExecution(checkTime);
             assertTrue(lastExec.isPresent(), "Should find last execution when checking from " + checkTime);
             assertEquals(
                 expectedLastExec,
@@ -93,7 +93,7 @@ public class LastExecutionWithDifferentMonthLengthsTest {
                 "Last execution should be correct when checking from " + checkTime
             );
             
-            final var nextExec = execTime.nextExecution(lastExec.get());
+            final Optional<ZonedDateTime> nextExec = execTime.nextExecution(lastExec.get());
             assertTrue(nextExec.isEmpty(), "Should not find next execution after " + lastExec.get());
         });
     }
