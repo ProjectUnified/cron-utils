@@ -74,4 +74,16 @@ public class CronBuilderQuartzIntegrationTest {
 
         assertEquals("0 1 13 ? * 1 *", cron.asString());
     }
+
+    @Test
+    void checkAllPredefinedCron() {
+        for (CronType cronType : CronType.values()) {
+            CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(cronType);
+            assertDoesNotThrow(() -> CronBuilder.hourly(cronDefinition));
+            assertDoesNotThrow(() -> CronBuilder.daily(cronDefinition));
+            assertDoesNotThrow(() -> CronBuilder.weekly(cronDefinition));
+            assertDoesNotThrow(() -> CronBuilder.monthly(cronDefinition));
+            assertDoesNotThrow(() -> CronBuilder.yearly(cronDefinition));
+        }
+    }
 }
