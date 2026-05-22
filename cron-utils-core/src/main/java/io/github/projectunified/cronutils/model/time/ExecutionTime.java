@@ -20,8 +20,11 @@ import io.github.projectunified.cronutils.model.field.CronField;
 import io.github.projectunified.cronutils.model.field.CronFieldName;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 /**
@@ -114,6 +117,50 @@ public interface ExecutionTime {
     Optional<ZonedDateTime> nextExecution(final ZonedDateTime date);
 
     /**
+     * Provide nearest date for next execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @return Optional Instant instance, never null. Contains next execution time or empty.
+     */
+    default Optional<Instant> nextExecution(final Instant instant) {
+        return nextExecution(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault())).map(ZonedDateTime::toInstant);
+    }
+
+    /**
+     * Provide nearest date for next execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return Optional Instant instance, never null. Contains next execution time or empty.
+     */
+    default Optional<Instant> nextExecution(final Instant instant, final ZoneId zoneId) {
+        return nextExecution(ZonedDateTime.ofInstant(instant, zoneId)).map(ZonedDateTime::toInstant);
+    }
+
+    /**
+     * Provide nearest date for next execution.
+     *
+     * @param millis - milliseconds in long.
+     * @return OptionalLong instance, never null. Contains next execution time or empty.
+     */
+    default OptionalLong nextExecution(final long millis) {
+        Optional<Instant> next = nextExecution(Instant.ofEpochMilli(millis));
+        return next.isPresent() ? OptionalLong.of(next.get().toEpochMilli()) : OptionalLong.empty();
+    }
+
+    /**
+     * Provide nearest date for next execution.
+     *
+     * @param millis - milliseconds in long.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return OptionalLong instance, never null. Contains next execution time or empty.
+     */
+    default OptionalLong nextExecution(final long millis, final ZoneId zoneId) {
+        Optional<Instant> next = nextExecution(Instant.ofEpochMilli(millis), zoneId);
+        return next.isPresent() ? OptionalLong.of(next.get().toEpochMilli()) : OptionalLong.empty();
+    }
+
+    /**
      * Provide nearest time for next execution.
      *
      * Due to the question #468 we clarify: crons execute on local instance time.
@@ -126,6 +173,48 @@ public interface ExecutionTime {
      * @return Duration instance, never null. Time to next execution.
      */
     Optional<Duration> timeToNextExecution(final ZonedDateTime date);
+
+    /**
+     * Provide nearest time for next execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @return Duration instance, never null. Time to next execution.
+     */
+    default Optional<Duration> timeToNextExecution(final Instant instant) {
+        return timeToNextExecution(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
+    }
+
+    /**
+     * Provide nearest time for next execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return Duration instance, never null. Time to next execution.
+     */
+    default Optional<Duration> timeToNextExecution(final Instant instant, final ZoneId zoneId) {
+        return timeToNextExecution(ZonedDateTime.ofInstant(instant, zoneId));
+    }
+
+    /**
+     * Provide nearest time for next execution.
+     *
+     * @param millis - milliseconds in long.
+     * @return Duration instance, never null. Time to next execution.
+     */
+    default Optional<Duration> timeToNextExecution(final long millis) {
+        return timeToNextExecution(Instant.ofEpochMilli(millis));
+    }
+
+    /**
+     * Provide nearest time for next execution.
+     *
+     * @param millis - milliseconds in long.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return Duration instance, never null. Time to next execution.
+     */
+    default Optional<Duration> timeToNextExecution(final long millis, final ZoneId zoneId) {
+        return timeToNextExecution(Instant.ofEpochMilli(millis), zoneId);
+    }
 
     /**
      * Provide nearest date for last execution.
@@ -142,12 +231,98 @@ public interface ExecutionTime {
     Optional<ZonedDateTime> lastExecution(final ZonedDateTime date);
 
     /**
+     * Provide nearest date for last execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @return Optional Instant instance, never null. Last execution time or empty.
+     */
+    default Optional<Instant> lastExecution(final Instant instant) {
+        return lastExecution(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault())).map(ZonedDateTime::toInstant);
+    }
+
+    /**
+     * Provide nearest date for last execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return Optional Instant instance, never null. Last execution time or empty.
+     */
+    default Optional<Instant> lastExecution(final Instant instant, final ZoneId zoneId) {
+        return lastExecution(ZonedDateTime.ofInstant(instant, zoneId)).map(ZonedDateTime::toInstant);
+    }
+
+    /**
+     * Provide nearest date for last execution.
+     *
+     * @param millis - milliseconds in long.
+     * @return OptionalLong instance, never null. Last execution time or empty.
+     */
+    default OptionalLong lastExecution(final long millis) {
+        Optional<Instant> last = lastExecution(Instant.ofEpochMilli(millis));
+        return last.isPresent() ? OptionalLong.of(last.get().toEpochMilli()) : OptionalLong.empty();
+    }
+
+    /**
+     * Provide nearest date for last execution.
+     *
+     * @param millis - milliseconds in long.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return OptionalLong instance, never null. Last execution time or empty.
+     */
+    default OptionalLong lastExecution(final long millis, final ZoneId zoneId) {
+        Optional<Instant> last = lastExecution(Instant.ofEpochMilli(millis), zoneId);
+        return last.isPresent() ? OptionalLong.of(last.get().toEpochMilli()) : OptionalLong.empty();
+    }
+
+    /**
      * Provide nearest time from last execution.
      *
      * @param date - ZonedDateTime instance. If null, a NullPointerException will be raised.
      * @return Duration instance, never null. Time from last execution.
      */
     Optional<Duration> timeFromLastExecution(final ZonedDateTime date);
+
+    /**
+     * Provide nearest time from last execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @return Duration instance, never null. Time from last execution.
+     */
+    default Optional<Duration> timeFromLastExecution(final Instant instant) {
+        return timeFromLastExecution(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
+    }
+
+    /**
+     * Provide nearest time from last execution.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return Duration instance, never null. Time from last execution.
+     */
+    default Optional<Duration> timeFromLastExecution(final Instant instant, final ZoneId zoneId) {
+        return timeFromLastExecution(ZonedDateTime.ofInstant(instant, zoneId));
+    }
+
+    /**
+     * Provide nearest time from last execution.
+     *
+     * @param millis - milliseconds in long.
+     * @return Duration instance, never null. Time from last execution.
+     */
+    default Optional<Duration> timeFromLastExecution(final long millis) {
+        return timeFromLastExecution(Instant.ofEpochMilli(millis));
+    }
+
+    /**
+     * Provide nearest time from last execution.
+     *
+     * @param millis - milliseconds in long.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return Duration instance, never null. Time from last execution.
+     */
+    default Optional<Duration> timeFromLastExecution(final long millis, final ZoneId zoneId) {
+        return timeFromLastExecution(Instant.ofEpochMilli(millis), zoneId);
+    }
 
     /**
      * Provide feedback if a given date matches the cron expression.
@@ -158,6 +333,48 @@ public interface ExecutionTime {
     boolean isMatch(ZonedDateTime date);
 
     /**
+     * Provide feedback if a given date matches the cron expression.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @return true if date matches cron expression requirements, false otherwise.
+     */
+    default boolean isMatch(final Instant instant) {
+        return isMatch(ZonedDateTime.ofInstant(instant, ZoneId.systemDefault()));
+    }
+
+    /**
+     * Provide feedback if a given date matches the cron expression.
+     *
+     * @param instant - Instant instance. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return true if date matches cron expression requirements, false otherwise.
+     */
+    default boolean isMatch(final Instant instant, final ZoneId zoneId) {
+        return isMatch(ZonedDateTime.ofInstant(instant, zoneId));
+    }
+
+    /**
+     * Provide feedback if a given date matches the cron expression.
+     *
+     * @param millis - milliseconds in long.
+     * @return true if date matches cron expression requirements, false otherwise.
+     */
+    default boolean isMatch(final long millis) {
+        return isMatch(Instant.ofEpochMilli(millis));
+    }
+
+    /**
+     * Provide feedback if a given date matches the cron expression.
+     *
+     * @param millis - milliseconds in long.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return true if date matches cron expression requirements, false otherwise.
+     */
+    default boolean isMatch(final long millis, final ZoneId zoneId) {
+        return isMatch(Instant.ofEpochMilli(millis), zoneId);
+    }
+
+    /**
      * Provide count of times cron expression would execute between given start and end dates
      *
      * @param startDate - Start date. If null, a NullPointerException will be raised.
@@ -166,6 +383,52 @@ public interface ExecutionTime {
      */
     default int countExecutions(ZonedDateTime startDate, ZonedDateTime endDate) {
         return getExecutionDates(startDate, endDate).size();
+    }
+
+    /**
+     * Provide count of times cron expression would execute between given start and end dates
+     *
+     * @param startInstant - Start date. If null, a NullPointerException will be raised.
+     * @param endInstant - End date. If null, a NullPointerException will be raised.
+     * @return count of executions
+     */
+    default int countExecutions(Instant startInstant, Instant endInstant) {
+        return countExecutions(ZonedDateTime.ofInstant(startInstant, ZoneId.systemDefault()), ZonedDateTime.ofInstant(endInstant, ZoneId.systemDefault()));
+    }
+
+    /**
+     * Provide count of times cron expression would execute between given start and end dates
+     *
+     * @param startInstant - Start date. If null, a NullPointerException will be raised.
+     * @param endInstant - End date. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return count of executions
+     */
+    default int countExecutions(Instant startInstant, Instant endInstant, ZoneId zoneId) {
+        return countExecutions(ZonedDateTime.ofInstant(startInstant, zoneId), ZonedDateTime.ofInstant(endInstant, zoneId));
+    }
+
+    /**
+     * Provide count of times cron expression would execute between given start and end dates
+     *
+     * @param startMillis - Start date in milliseconds.
+     * @param endMillis - End date in milliseconds.
+     * @return count of executions
+     */
+    default int countExecutions(long startMillis, long endMillis) {
+        return countExecutions(Instant.ofEpochMilli(startMillis), Instant.ofEpochMilli(endMillis));
+    }
+
+    /**
+     * Provide count of times cron expression would execute between given start and end dates
+     *
+     * @param startMillis - Start date in milliseconds.
+     * @param endMillis - End date in milliseconds.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return count of executions
+     */
+    default int countExecutions(long startMillis, long endMillis, ZoneId zoneId) {
+        return countExecutions(Instant.ofEpochMilli(startMillis), Instant.ofEpochMilli(endMillis), zoneId);
     }
 
     /**
@@ -189,5 +452,55 @@ public interface ExecutionTime {
             nextExecutionDate = nextExecution(nextExecutionDate).orElse(null);
         }
         return executions;
+    }
+
+    /**
+     * Provide date times when cron expression would execute between given start and end dates.
+     *
+     * @param startInstant - Start date. If null, a NullPointerException will be raised.
+     * @param endInstant - End date. If null, a NullPointerException will be raised.
+     * @return list of Instants
+     */
+    default List<Instant> getExecutionDates(Instant startInstant, Instant endInstant) {
+        return getExecutionDates(ZonedDateTime.ofInstant(startInstant, ZoneId.systemDefault()), ZonedDateTime.ofInstant(endInstant, ZoneId.systemDefault()))
+                .stream().map(ZonedDateTime::toInstant).collect(Collectors.toList());
+    }
+
+    /**
+     * Provide date times when cron expression would execute between given start and end dates.
+     *
+     * @param startInstant - Start date. If null, a NullPointerException will be raised.
+     * @param endInstant - End date. If null, a NullPointerException will be raised.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return list of Instants
+     */
+    default List<Instant> getExecutionDates(Instant startInstant, Instant endInstant, ZoneId zoneId) {
+        return getExecutionDates(ZonedDateTime.ofInstant(startInstant, zoneId), ZonedDateTime.ofInstant(endInstant, zoneId))
+                .stream().map(ZonedDateTime::toInstant).collect(Collectors.toList());
+    }
+
+    /**
+     * Provide date times when cron expression would execute between given start and end dates.
+     *
+     * @param startMillis - Start date in milliseconds.
+     * @param endMillis - End date in milliseconds.
+     * @return list of millisecond timestamps in Long
+     */
+    default List<Long> getExecutionDates(long startMillis, long endMillis) {
+        return getExecutionDates(Instant.ofEpochMilli(startMillis), Instant.ofEpochMilli(endMillis))
+                .stream().map(Instant::toEpochMilli).collect(Collectors.toList());
+    }
+
+    /**
+     * Provide date times when cron expression would execute between given start and end dates.
+     *
+     * @param startMillis - Start date in milliseconds.
+     * @param endMillis - End date in milliseconds.
+     * @param zoneId - ZoneId instance. If null, a NullPointerException will be raised.
+     * @return list of millisecond timestamps in Long
+     */
+    default List<Long> getExecutionDates(long startMillis, long endMillis, ZoneId zoneId) {
+        return getExecutionDates(Instant.ofEpochMilli(startMillis), Instant.ofEpochMilli(endMillis), zoneId)
+                .stream().map(Instant::toEpochMilli).collect(Collectors.toList());
     }
 }
