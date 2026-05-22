@@ -162,7 +162,7 @@ public class CronBuilder {
                 new On(new IntegerFieldValue(0)),
                 resolveExpr(definition, DAY_OF_MONTH, FieldExpression.questionMark()),
                 always(),
-                new On(new IntegerFieldValue(0)),
+                new On(new IntegerFieldValue(definition.getFieldDefinition(DAY_OF_WEEK).getConstraints().getStartRange())),
                 always()
         );
     }

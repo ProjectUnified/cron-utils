@@ -33,6 +33,6 @@ public class RandomUtils {
      * @return random integer
      */
     public int nextInt(int min, int max) {
-        return random.nextInt(min, max);
+        return min + random.nextInt(max - min + 1);
     }
 }
