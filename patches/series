@@ -4,3 +4,4 @@
 04-executiontime-instant-millis.patch
 05-remove-slf4j-logging.patch
 06-test-java8-var-compat.patch
+07-teavm-stream-compat.patch

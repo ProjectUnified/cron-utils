@@ -1,0 +1,123 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.projectunified</groupId>
+        <artifactId>cron-utils</artifactId>
+        <version>2.0.0</version>
+    </parent>
+
+    <artifactId>cron-utils-web</artifactId>
+    <name>cron-utils-web</name>
+    <description>Static cron explainer and generator site; cron logic runs client-side via TeaVM WASM-GC.</description>
+    <packaging>war</packaging>
+
+    <properties>
+        <teavm.version>0.15.0</teavm.version>
+        <!-- Static site: never publish to Maven Central, sign, or attach sources/javadoc. -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <gpg.skip>true</gpg.skip>
+        <maven.source.skip>true</maven.source.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>cron-utils-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>cron-utils-descriptor</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Emulator of Java class library for TeaVM -->
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-classlib</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- JavaScriptObjects (JSO): JavaScript bindings for TeaVM -->
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-jso-apis</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Include TeaVM WASM-GC output in the webapp root (teavm/ directory). -->
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.4.0</version>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>${project.build.directory}/generated/wasm</directory>
+                        </resource>
+                    </webResources>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>explode-pages</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exploded</goal>
+                        </goals>
+                        <configuration>
+                            <webappDirectory>${project.build.directory}/pages</webappDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.teavm</groupId>
+                <artifactId>teavm-maven-plugin</artifactId>
+                <version>${teavm.version}</version>
+                <executions>
+                    <execution>
+                        <id>web-client-wasm</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <targetDirectory>${project.build.directory}/generated/wasm/teavm</targetDirectory>
+                            <targetType>WEBASSEMBLY_GC</targetType>
+                            <mainClass>com.cronutils.web.CronWebApp</mainClass>
+                            <optimizationLevel>ADVANCED</optimizationLevel>
+                            <minifying>true</minifying>
+                            <debugInformationGenerated>false</debugInformationGenerated>
+                            <sourceMapsGenerated>false</sourceMapsGenerated>
+                            <sourceFilesCopied>false</sourceFilesCopied>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>web-client-runtime</id>
+                        <goals>
+                            <goal>copy-webassembly-gc-runtime</goal>
+                        </goals>
+                        <configuration>
+                            <targetDirectory>${project.build.directory}/generated/wasm/teavm</targetDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

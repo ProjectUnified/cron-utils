@@ -1,0 +1,58 @@
+--- a/cron-utils-core/src/main/java/com/cronutils/model/CompositeCron.java
++++ b/cron-utils-core/src/main/java/com/cronutils/model/CompositeCron.java
+@@ -6,6 +6,7 @@
+ import com.cronutils.model.field.CronFieldName;
+ import com.cronutils.utils.Preconditions;
+ 
++import java.util.Arrays;
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.Map;
+@@ -49,7 +50,7 @@
+                 fieldbuilder.append(String.format("%s ", pattern.split(" ")[j]));
+             }
+             String fieldstring = fieldbuilder.toString().trim().replaceAll(" ", "|");
+-            if(split.splitAsStream(fieldstring).distinct().limit(2).count() <= 1){
++            if (Arrays.stream(split.split(fieldstring)).distinct().limit(2).count() <= 1) {
+                 fieldstring = split.split(fieldstring)[0];
+             }
+             builder.append(String.format("%s ", fieldstring));
+--- a/cron-utils-core/src/main/java/com/cronutils/model/time/CompositeExecutionTime.java
++++ b/cron-utils-core/src/main/java/com/cronutils/model/time/CompositeExecutionTime.java
+@@ -18,7 +18,7 @@
+ 
+     @Override
+     public Optional<ZonedDateTime> nextExecution(ZonedDateTime date) {
+-        Optional<Optional<ZonedDateTime>> next = executionTimes.parallelStream().map(e->e.nextExecution(date)).filter(Optional::isPresent).sorted(
++        Optional<Optional<ZonedDateTime>> next = executionTimes.stream().map(e->e.nextExecution(date)).filter(Optional::isPresent).sorted(
+                 (o1, o2) -> {
+                     if(o1.isPresent() && o2.isPresent()){
+                         ZonedDateTime first = o1.get();
+@@ -39,7 +39,7 @@
+ 
+     @Override
+     public Optional<ZonedDateTime> lastExecution(ZonedDateTime date) {
+-        Optional<Optional<ZonedDateTime>> next = executionTimes.parallelStream().map(e->e.lastExecution(date)).filter(Optional::isPresent).sorted(
++        Optional<Optional<ZonedDateTime>> next = executionTimes.stream().map(e->e.lastExecution(date)).filter(Optional::isPresent).sorted(
+                 (o1, o2) -> {
+                     if(o1.isPresent() && o2.isPresent()){
+                         ZonedDateTime first = o1.get();
+@@ -58,6 +58,6 @@
+ 
+     @Override
+     public boolean isMatch(ZonedDateTime date) {
+-        return executionTimes.parallelStream().map(e->e.isMatch(date)).filter(v-> v).count()>0;
++        return executionTimes.stream().map(e->e.isMatch(date)).filter(v-> v).count()>0;
+     }
+ }
+--- a/cron-utils-core/src/main/java/com/cronutils/model/time/ExecutionTime.java
++++ b/cron-utils-core/src/main/java/com/cronutils/model/time/ExecutionTime.java
+@@ -77,7 +77,7 @@
+             return executionTimeBuilder.build();
+         }
+         if (cron instanceof CompositeCron) {
+-            return new CompositeExecutionTime(((CompositeCron) cron).getCrons().parallelStream().map(ExecutionTime::forCron).collect(Collectors.toList()));
++            return new CompositeExecutionTime(((CompositeCron) cron).getCrons().stream().map(ExecutionTime::forCron).collect(Collectors.toList()));
+         }
+ 
+         return new ExecutionTime() {

@@ -47,6 +47,7 @@
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
     <modules>
@@ -54,6 +55,7 @@
         <module>cron-utils-descriptor</module>
         <module>cron-utils-converter</module>
         <module>cron-utils-validator</module>
+        <module>cron-utils-web</module>
     </modules>
 
     <dependencyManagement>
@@ -163,12 +165,11 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.11.0</version>
-                        <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>true</autoPublish>
                             <deploymentName>${project.name}</deploymentName>
+                            <skipPublishing>${maven.deploy.skip}</skipPublishing>
                         </configuration>
                     </plugin>
                 </plugins>
