@@ -1,0 +1,438 @@
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/BaseCronTransformer.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/BaseCronTransformer.java
+@@ -13,9 +13,6 @@
+ 
+ package com.cronutils.converter;
+ 
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-
+ import java.util.Calendar;
+ import java.util.Collections;
+ import java.util.HashMap;
+@@ -25,9 +22,6 @@
+ 
+ public abstract class BaseCronTransformer {
+ 
+-	protected static final Logger LOGGER = LoggerFactory
+-			.getLogger(BaseCronTransformer.class);
+-
+ 	protected String[] cronParts;
+ 
+ 	protected Calendar calendarInstance;
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/CalendarToCronTransformer.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CalendarToCronTransformer.java
+@@ -19,9 +19,6 @@
+ 	protected void transform() {
+ 		String updatedValue = String
+ 				.valueOf(calendarInstance.get(calendarField));
+-		LOGGER.debug(
+-				"Updating cron field at position {} with {}, using calendar field {}",
+-				cronFieldPosition, updatedValue, calendarField);
+ 		cronParts[cronFieldPosition] = updatedValue;
+ 	}
+ }
+\ No newline at end of file
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/CronConverter.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CronConverter.java
+@@ -13,9 +13,6 @@
+ 
+ package com.cronutils.converter;
+ 
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-
+ import java.time.ZoneId;
+ import java.util.Calendar;
+ import java.util.TimeZone;
+@@ -24,14 +21,9 @@
+ 
+ public class CronConverter {
+ 
+-	private static final Logger LOGGER = LoggerFactory.getLogger(CronConverter.class);
+-
+ 	private static final String CRON_FIELDS_SEPARATOR = " ";
+ 	private String[] cronParts;
+ 	private Calendar fromCalendar;
+-	private String sourceCron;
+-	private ZoneId sourceZoneId;
+-	private ZoneId targetZoneId;
+ 
+ 	private CronToCalendarTransformer toCalendarConverter;
+ 	private CalendarToCronTransformer toCronConverter;
+@@ -42,39 +34,25 @@
+ 	}
+ 
+ 	public CronConverter using(String cronExpression) {
+-		this.sourceCron = cronExpression;
+ 		cronParts = cronExpression.split(CRON_FIELDS_SEPARATOR);
+-		LOGGER.debug("Cron '{}' split into {}", cronExpression, cronParts);
+ 		return this;
+ 	}
+ 
+ 	public CronConverter from(ZoneId zoneId) {
+-		sourceZoneId = zoneId;
+ 		fromCalendar = getCalendar(zoneId);
+ 		toCalendarConverter.apply(cronParts, fromCalendar);
+-		LOGGER.debug("Calendar object built using cron :{} and zoneID {} => {}",
+-				cronParts, zoneId, fromCalendar);
+ 		return this;
+ 	}
+ 
+ 	public CronConverter to(ZoneId zoneId) {
+-		targetZoneId = zoneId;
+ 		Calendar toCalendar = getCalendar(zoneId);
+ 		toCalendar.setTimeInMillis(fromCalendar.getTimeInMillis());
+-		LOGGER.debug(
+-				"Calendar object built from calendar {} and zoneID {} => {}",
+-				fromCalendar, zoneId, toCalendar);
+ 		toCronConverter.apply(cronParts, toCalendar);
+-		LOGGER.debug("cron after applying calendar {} => {}", toCalendar,
+-				cronParts);
+ 		return this;
+ 	}
+ 
+ 	public String convert() {
+-		String targetCron = StringUtils.join(cronParts, CRON_FIELDS_SEPARATOR);
+-		LOGGER.info("Converted CRON -- {} :[{}] => {} :[{}]", sourceZoneId,
+-				sourceCron, targetZoneId, targetCron);
+-		return targetCron;
++		return StringUtils.join(cronParts, CRON_FIELDS_SEPARATOR);
+ 	}
+ 
+ 	private Calendar getCalendar(ZoneId id) {
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/CronToCalendarTransformer.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CronToCalendarTransformer.java
+@@ -17,9 +17,6 @@
+ 
+ 	@Override
+ 	protected void transform() {
+-		LOGGER.debug(
+-				"Setting field '{}' from cron found at position '{}' to calendar field '{}'",
+-				cronFieldValue, cronFieldPosition, calendarField);
+ 		calendarInstance.set(calendarField, cronFieldValue);
+ 	}
+ }
+--- a/cron-utils-core/src/main/java/com/cronutils/model/time/generator/AndFieldValueGenerator.java
++++ b/cron-utils-core/src/main/java/com/cronutils/model/time/generator/AndFieldValueGenerator.java
+@@ -16,15 +16,12 @@
+ import com.cronutils.Function;
+ import com.cronutils.model.field.CronField;
+ import com.cronutils.model.field.expression.*;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import java.util.ArrayList;
+ import java.util.Collections;
+ import java.util.List;
+ 
+ class AndFieldValueGenerator extends FieldValueGenerator {
+-    private static final Logger log = LoggerFactory.getLogger(AndFieldValueGenerator.class);
+ 
+     public AndFieldValueGenerator(final CronField cronField) {
+         super(cronField);
+@@ -78,7 +75,7 @@
+                 reference = generateNextValue(reference);
+             }
+         } catch (final NoSuchValueException e) {
+-            log.debug("Catched expected exception while generating candidates", e);
++            // expected exception while generating candidates
+         }
+         return values;
+     }
+--- a/cron-utils-core/src/test/java/com/cronutils/Issue446Test.java
++++ b/cron-utils-core/src/test/java/com/cronutils/Issue446Test.java
+@@ -7,8 +7,6 @@
+ import com.cronutils.model.definition.CronDefinitionBuilder;
+ import com.cronutils.model.time.ExecutionTime;
+ import org.junit.jupiter.api.Test;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import java.time.*;
+ import java.util.Optional;
+@@ -21,7 +19,6 @@
+ 
+ 
+ public class Issue446Test {
+-    private static final Logger LOGGER = LoggerFactory.getLogger(Issue446Test.class);
+     private static final CronDefinition definition = CronDefinitionBuilder.defineCron()
+             .withMinutes().and()
+             .withHours().and()
+@@ -39,7 +36,6 @@
+         LocalDateTime dayOfApril = LocalDateTime.of(2020, 4, 25, 0, 0);
+         Clock clock = Clock.fixed(dayOfApril.toInstant(ZoneOffset.UTC), ZoneId.systemDefault());
+         ZonedDateTime dayOfAprilInLocalTimezone = ZonedDateTime.now(clock);
+-        LOGGER.info("now: " + dayOfAprilInLocalTimezone);
+         Cron cron = getEveryMonthFromNow(dayOfAprilInLocalTimezone, 6).instance();
+ 
+         ZonedDateTime nextRun = nextRun(cron, dayOfAprilInLocalTimezone); // first run
+@@ -70,7 +66,6 @@
+         LocalDateTime daylightSaving2020 = LocalDateTime.of(2020, 10, 25, 1, 10);
+         Clock clock = Clock.fixed(daylightSaving2020.toInstant(ZoneOffset.ofHours(2)),ZoneId.of("Europe/Rome"));
+         ZonedDateTime daylightSaving2020InLocalTimezone = ZonedDateTime.now(clock);
+-        LOGGER.info("\nnow: " + daylightSaving2020InLocalTimezone);
+         Cron cron = getEvery30Minute(daylightSaving2020InLocalTimezone).instance();
+ 
+         ZonedDateTime nextRun = nextRun(cron, daylightSaving2020InLocalTimezone); // first run
+@@ -106,7 +101,6 @@
+         LocalDateTime startDay = LocalDateTime.of(2020, 10, 24, 1, 0); // Day before Daylight saving
+         Clock clock = Clock.fixed(startDay.toInstant(ZoneOffset.ofHours(2)), ZoneId.of("Europe/Rome"));
+         ZonedDateTime daylightSaving2020InLocalTimezone = ZonedDateTime.now(clock);
+-        LOGGER.info("\nnow: " + daylightSaving2020InLocalTimezone);
+         Cron cron = getEveryHour(daylightSaving2020InLocalTimezone).instance();
+ 
+         ZonedDateTime nextRun = nextRun(cron, daylightSaving2020InLocalTimezone);
+@@ -121,7 +115,6 @@
+         startDay = LocalDateTime.of(2020, 10, 25, 1, 0); // Daylight saving
+         clock = Clock.fixed(startDay.toInstant(ZoneOffset.ofHours(2)), ZoneId.of("Europe/Rome"));
+         daylightSaving2020InLocalTimezone = ZonedDateTime.now(clock);
+-        LOGGER.info("\nnow: " + daylightSaving2020InLocalTimezone);
+         cron = getEveryHour(daylightSaving2020InLocalTimezone).instance();
+ 
+         nextRun = nextRun(cron, daylightSaving2020InLocalTimezone); // first run
+@@ -166,7 +159,6 @@
+         if (!next.isPresent()) {
+             fail();
+         }
+-        LOGGER.info("Calculated next run at " + next.get());
+         return next.get();
+     }
+ }
+--- a/cron-utils-core/src/test/java/com/cronutils/Issue480Test.java
++++ b/cron-utils-core/src/test/java/com/cronutils/Issue480Test.java
+@@ -7,8 +7,6 @@
+ import com.cronutils.model.definition.CronDefinitionBuilder;
+ import com.cronutils.model.time.ExecutionTime;
+ import org.junit.jupiter.api.Test;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import java.time.*;
+ import java.time.temporal.ChronoUnit;
+@@ -21,8 +19,6 @@
+ 
+ public class Issue480Test {
+ 
+-    private static final Logger LOGGER = LoggerFactory.getLogger(Issue480Test.class);
+-
+     private static final CronDefinition definition = CronDefinitionBuilder.defineCron()
+             .withMinutes().and()
+             .withHours().and()
+@@ -42,16 +38,13 @@
+         assertEquals(sunday.getDayOfWeek(), DayOfWeek.SUNDAY);
+         Clock clock = Clock.fixed(sunday.toInstant(ZoneOffset.UTC), ZoneId.systemDefault());
+         ZonedDateTime now = ZonedDateTime.now(clock);
+-        LOGGER.info("Now: {}", now);
+ 
+         Cron cron = getWeekly(now).instance();
+         ZonedDateTime nextRun;
+ 
+         final ZonedDateTime nowPlusWeek = now.plusWeeks(1);
+-        LOGGER.info("now + 1 week: {}", nowPlusWeek);
+ 
+         nextRun = nextRun(cron, now); // first run
+-        LOGGER.info("nextRun: {}", nextRun);
+ 
+         assertTrue(nextRun.truncatedTo(ChronoUnit.MINUTES)
+                 .isEqual(nowPlusWeek.truncatedTo(ChronoUnit.MINUTES)));
+@@ -74,7 +67,6 @@
+         if (!next.isPresent()) {
+             fail();
+         }
+-        LOGGER.info("Calculated next run at {}", next.get());
+         return next.get();
+     }
+ 
+--- a/cron-utils-core/src/test/java/com/cronutils/Issue55UnexpectedExecutionTimes.java
++++ b/cron-utils-core/src/test/java/com/cronutils/Issue55UnexpectedExecutionTimes.java
+@@ -23,8 +23,6 @@
+ import com.cronutils.parser.CronParser;
+ import org.junit.jupiter.api.BeforeEach;
+ import org.junit.jupiter.api.Test;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import java.time.Instant;
+ import java.time.ZoneOffset;
+@@ -37,7 +35,6 @@
+ 
+ public class Issue55UnexpectedExecutionTimes {
+ 
+-    private static final Logger LOGGER = LoggerFactory.getLogger(Issue55UnexpectedExecutionTimes.class);
+     private CronDefinition cronDefinition;
+ 
+     /**
+@@ -78,15 +75,12 @@
+      */
+     @Test
+     public void testOnceEveryThreeDaysNoInstantsWithinTwoDays() {
+-        LOGGER.debug("TEST1 - expecting 0 instants");
+         final ZonedDateTime startTime = ZonedDateTime.of(0, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+         final ZonedDateTime endTime = startTime.plusDays(2);
+         final CronParser parser = new CronParser(cronDefinition);
+         final Cron cron = parser.parse("0 0 */3 * ?");
+         final ExecutionTime executionTime = ExecutionTime.forCron(cron);
+         final List<Instant> instants = getInstants(executionTime, startTime, endTime);
+-        LOGGER.debug("instants.size() == {}", instants.size());
+-        LOGGER.debug("instants: {}", instants);
+         assertEquals(0, instants.size());
+     }
+ 
+@@ -95,15 +89,12 @@
+      */
+     @Test
+     public void testOnceAMonthTwelveInstantsInYear() {
+-        LOGGER.debug("TEST2 - expecting 12 instants");
+         final ZonedDateTime startTime = ZonedDateTime.of(0, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+         final ZonedDateTime endTime = startTime.plusYears(1);
+         final CronParser parser = new CronParser(cronDefinition);
+         final Cron cron = parser.parse("0 12 L * ?");
+         final ExecutionTime executionTime = ExecutionTime.forCron(cron);
+         final List<Instant> instants = getInstants(executionTime, startTime, endTime);
+-        LOGGER.debug("instants.size() == {}", instants.size());
+-        LOGGER.debug("instants: {}", instants);
+         assertEquals(12, instants.size());
+     }
+ 
+--- a/cron-utils-core/src/test/java/com/cronutils/model/time/ExecutionTimeCron4jIntegrationTest.java
++++ b/cron-utils-core/src/test/java/com/cronutils/model/time/ExecutionTimeCron4jIntegrationTest.java
+@@ -12,8 +12,6 @@
+ import com.cronutils.parser.CronParser;
+ import org.junit.jupiter.api.BeforeEach;
+ import org.junit.jupiter.api.Test;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import java.time.DayOfWeek;
+ import java.time.Month;
+@@ -30,10 +28,7 @@
+     private static final String EVERY_15_MINUTES = "0/15 * * * *";
+     private static final String EVERY_2_HOURS = "0 0/2 * * *";
+     private static final String EVERY_WEEKDAY_AT_6 = "0 6 * * MON-FRI";
+-    private static final Logger log = LoggerFactory.getLogger(ExecutionTimeCron4jIntegrationTest.class);
+     private static final String NEXT_EXECUTION_NOT_PRESENT_ERROR = "next execution not present";
+-    private static final String LOG_LAST_RUN = "LastRun = [{}]";
+-    private static final String LOG_NEXT_RUN = "NextRun = [{}]";
+ 
+     @BeforeEach
+     public void setUp() {
+@@ -60,8 +55,6 @@
+             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
+             if (nextExecution.isPresent()) {
+                 final ZonedDateTime nextRun = nextExecution.get();
+-                log.info(LOG_LAST_RUN, lastRun);
+-                log.info(LOG_NEXT_RUN, nextRun);
+ 
+                 assertNotEquals(DayOfWeek.SATURDAY, nextRun.getDayOfWeek());
+                 assertNotEquals(DayOfWeek.SUNDAY, nextRun.getDayOfWeek());
+@@ -88,8 +81,6 @@
+             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
+             if (nextExecution.isPresent()) {
+                 final ZonedDateTime nextRun = nextExecution.get();
+-                log.info(LOG_LAST_RUN, lastRun);
+-                log.info(LOG_NEXT_RUN, nextRun);
+ 
+                 assertTrue(nextRun.getHour() % 2 == 0, String.format("Hour is %s", nextRun.getHour()));
+                 assertTrue(lastRun.isBefore(nextRun), String.format("Last run is before next one: %s", lastRun.isBefore(nextRun)));
+@@ -112,8 +103,6 @@
+             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
+             if (nextExecution.isPresent()) {
+                 final ZonedDateTime nextRun = nextExecution.get();
+-                log.info(LOG_LAST_RUN, lastRun);
+-                log.info(LOG_NEXT_RUN, nextRun);
+ 
+                 assertTrue(nextRun.getHour() % 2 == 0, String.format("Hour is %s", nextRun.getHour()));
+                 assertTrue(lastRun.isBefore(nextRun), String.format("Last run is before next one: %s", lastRun.isBefore(nextRun)));
+@@ -139,8 +128,6 @@
+             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
+             if (nextExecution.isPresent()) {
+                 final ZonedDateTime nextRun = nextExecution.get();
+-                log.debug(LOG_LAST_RUN, lastRun);
+-                log.debug(LOG_NEXT_RUN, nextRun);
+ 
+                 assertTrue(nextRun.getMinute() % 15 == 0);
+                 assertTrue(lastRun.isBefore(nextRun));
+@@ -246,14 +233,11 @@
+         final int dayOfMonth = random.nextInt(Month.of(month).maxLength()) + 1;
+         final String expression = String.format("0 0 %d %d %d", dayOfMonth, month, dayOfWeekValue);
+         final ExecutionTime executionTime = ExecutionTime.forCron(cron4jCronParser.parse(expression));
+-        log.debug("cron4j expression: {}", expression);
+         ZonedDateTime next = ZonedDateTime.now();
+-        log.debug("Start date: {}", next);
+         for (int i = 1; i <= 20; i++) {
+             final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(next);
+             assert (nextExecution.isPresent());
+             next = nextExecution.get();
+-            log.debug("Execution #{} date: {}", i, next);
+             assertEquals(dayOfWeek, next.getDayOfWeek(), "Incorrect day of the week");
+             assertEquals(dayOfMonth, next.getDayOfMonth(), "Incorrect day of the month");
+             assertEquals(month, next.getMonthValue(), "Incorrect month");
+--- a/cron-utils-descriptor/src/test/java/com/cronutils/model/time/ExecutionTimeQuartzIntegrationTest.java
++++ b/cron-utils-descriptor/src/test/java/com/cronutils/model/time/ExecutionTimeQuartzIntegrationTest.java
+@@ -20,8 +20,6 @@
+ import org.junit.jupiter.api.BeforeEach;
+ import org.junit.jupiter.api.Disabled;
+ import org.junit.jupiter.api.Test;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import java.text.ParseException;
+ import java.time.*;
+@@ -40,7 +38,6 @@
+     private CronParser parser;
+     private static final String EVERY_SECOND = "* * * * * ? *";
+ 
+-    private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionTimeQuartzIntegrationTest.class);
+     private static final String NEXT_EXECUTION_NOT_PRESENT_ERROR = "next execution was not present";
+     private static final String LAST_EXECUTION_NOT_PRESENT_ERROR = "last execution was not present";
+     private static final String DURATION_NOT_PRESENT_ERROR = "duration was not present";
+@@ -718,10 +715,7 @@
+      */
+     @Test
+     public void lastExecutionDec31NotFail() {
+-        final ExecutionTime et = ExecutionTime.forCron(parser.parse("0 0 12 31 12 ? *"));
+-        if (LOGGER.isDebugEnabled()) {
+-            LOGGER.debug(et.lastExecution(ZonedDateTime.now()).toString());
+-        }
++        ExecutionTime.forCron(parser.parse("0 0 12 31 12 ? *"));
+     }
+ 
+     /**
+@@ -934,7 +928,6 @@
+             final ZonedDateTime expectedNextRun) {
+ 
+         final String testCaseDescription = "cron expression '" + cronExpression + "' with zdt " + lastRun;
+-        LOGGER.debug("TESTING: " + testCaseDescription);
+         final Cron cron = parser.parse(cronExpression);
+         final ExecutionTime executionTime = ExecutionTime.forCron(cron);
+         try {
+--- a/cron-utils-validator/src/test/java/com/cronutils/validation/CronValidatorTest.java
++++ b/cron-utils-validator/src/test/java/com/cronutils/validation/CronValidatorTest.java
+@@ -4,8 +4,6 @@
+ import org.junit.jupiter.params.ParameterizedTest;
+ import org.junit.jupiter.params.provider.Arguments;
+ import org.junit.jupiter.params.provider.MethodSource;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ import jakarta.validation.ConstraintViolation;
+ import jakarta.validation.Validation;
+@@ -18,8 +16,6 @@
+ 
+ public class CronValidatorTest {
+ 
+-    private static final Logger LOGGER = LoggerFactory.getLogger(CronValidatorTest.class);
+-
+     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+ 
+     public static Stream<Arguments> expressions() {
+@@ -44,7 +40,7 @@
+     public void validateExamples(String expression, boolean valid) {
+         TestPojo testPojo = new TestPojo(expression);
+         Set<ConstraintViolation<TestPojo>> violations = validator.validate(testPojo);
+-        violations.stream().map(ConstraintViolation::getMessage).forEach(LOGGER::info);
++        // violations.stream().map(ConstraintViolation::getMessage).forEach(System.out::println);
+ 
+         if (valid) {
+             assertTrue(violations.isEmpty());

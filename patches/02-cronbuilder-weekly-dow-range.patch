@@ -1,0 +1,30 @@
+--- a/cron-utils-core/src/main/java/com/cronutils/builder/CronBuilder.java
++++ b/cron-utils-core/src/main/java/com/cronutils/builder/CronBuilder.java
+@@ -162,7 +162,7 @@
+                 new On(new IntegerFieldValue(0)),
+                 resolveExpr(definition, DAY_OF_MONTH, FieldExpression.questionMark()),
+                 always(),
+-                new On(new IntegerFieldValue(0)),
++                new On(new IntegerFieldValue(definition.getFieldDefinition(DAY_OF_WEEK).getConstraints().getStartRange())),
+                 always()
+         );
+     }
+--- a/cron-utils-core/src/test/java/com/cronutils/builder/CronBuilderQuartzIntegrationTest.java
++++ b/cron-utils-core/src/test/java/com/cronutils/builder/CronBuilderQuartzIntegrationTest.java
+@@ -74,4 +74,16 @@
+ 
+         assertEquals("0 1 13 ? * 1 *", cron.asString());
+     }
++
++    @Test
++    void checkAllPredefinedCron() {
++        for (CronType cronType : CronType.values()) {
++            CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(cronType);
++            assertDoesNotThrow(() -> CronBuilder.hourly(cronDefinition));
++            assertDoesNotThrow(() -> CronBuilder.daily(cronDefinition));
++            assertDoesNotThrow(() -> CronBuilder.weekly(cronDefinition));
++            assertDoesNotThrow(() -> CronBuilder.monthly(cronDefinition));
++            assertDoesNotThrow(() -> CronBuilder.yearly(cronDefinition));
++        }
++    }
+ }

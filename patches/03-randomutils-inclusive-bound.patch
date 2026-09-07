@@ -1,0 +1,10 @@
+--- a/cron-utils-core/src/main/java/com/cronutils/utils/RandomUtils.java
++++ b/cron-utils-core/src/main/java/com/cronutils/utils/RandomUtils.java
+@@ -33,6 +33,6 @@
+      * @return random integer
+      */
+     public int nextInt(int min, int max) {
+-        return random.nextInt(min, max);
++        return min + random.nextInt(max - min + 1);
+     }
+ }

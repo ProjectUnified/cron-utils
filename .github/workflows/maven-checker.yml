@@ -1,0 +1,35 @@
+name: Build & Check
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install quilt
+        run: sudo apt-get update && sudo apt-get install -y quilt
+      - name: Sync upstream sources
+        run: bash scripts/sync-upstream.sh
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      - name: Unshallow
+        run: git fetch --unshallow --quiet
+      - name: Build
+        run: mvn clean package
+  automerge:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - uses: fastify/github-action-merge-dependabot@v3
