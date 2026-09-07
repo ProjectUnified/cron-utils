@@ -21,7 +21,7 @@ Available on Maven Central:
 <dependency>
     <groupId>io.github.projectunified</groupId>
     <artifactId>cron-utils-core</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
