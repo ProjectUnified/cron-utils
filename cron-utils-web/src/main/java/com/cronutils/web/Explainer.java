@@ -10,6 +10,7 @@ import com.cronutils.parser.CronParser;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,11 +41,11 @@ public final class Explainer {
         public final String normalized;
         /** Human-readable description; non-null only when {@code ok}. */
         public final String description;
-        /** Next executions, ISO-8601 strings; empty when none found. */
-        public final List<String> nextRuns;
+        /** Next executions; empty when none found. */
+        public final List<ZonedDateTime> nextRuns;
 
         private ExplainResult(boolean ok, boolean hint, String error,
-                              String normalized, String description, List<String> nextRuns) {
+                              String normalized, String description, List<ZonedDateTime> nextRuns) {
             this.ok = ok;
             this.hint = hint;
             this.error = error;
@@ -54,14 +55,14 @@ public final class Explainer {
         }
 
         static ExplainResult hint() {
-            return new ExplainResult(false, true, null, null, null, Collections.<String>emptyList());
+            return new ExplainResult(false, true, null, null, null, Collections.<ZonedDateTime>emptyList());
         }
 
         static ExplainResult error(String message) {
-            return new ExplainResult(false, false, message, null, null, Collections.<String>emptyList());
+            return new ExplainResult(false, false, message, null, null, Collections.<ZonedDateTime>emptyList());
         }
 
-        static ExplainResult success(String normalized, String description, List<String> nextRuns) {
+        static ExplainResult success(String normalized, String description, List<ZonedDateTime> nextRuns) {
             return new ExplainResult(true, false, null, normalized, description, nextRuns);
         }
     }
@@ -98,11 +99,23 @@ public final class Explainer {
         }
     }
 
-    private static List<String> nextRuns(Cron cron, ZoneId zone, ZonedDateTime from) {
+    /**
+     * Short readable form of a run, e.g. {@code "Thu, 1 Jan 2026, 12:00 (+00:00)"}.
+     * Always English so it renders identically for every description language.
+     *
+     * @param dateTime run; never null
+     * @return display text; never null
+     */
+    public static String display(ZonedDateTime dateTime) {
+        return DateTimeFormatter.ofPattern("EEE, d MMM yyyy, HH:mm (xxx)", Locale.ENGLISH)
+                .format(dateTime);
+    }
+
+    private static List<ZonedDateTime> nextRuns(Cron cron, ZoneId zone, ZonedDateTime from) {
         if (from == null) {
-            return Collections.<String>emptyList();
+            return Collections.<ZonedDateTime>emptyList();
         }
-        List<String> runs = new ArrayList<>(NEXT_RUN_COUNT);
+        List<ZonedDateTime> runs = new ArrayList<>(NEXT_RUN_COUNT);
         ExecutionTime executionTime = ExecutionTime.forCron(cron);
         ZonedDateTime cursor = from.withZoneSameInstant(zone);
         for (int i = 0; i < NEXT_RUN_COUNT; i++) {
@@ -111,7 +124,7 @@ public final class Explainer {
                 break;
             }
             cursor = next.get();
-            runs.add(cursor.toString());
+            runs.add(cursor);
         }
         return runs;
     }

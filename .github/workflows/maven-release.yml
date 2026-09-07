@@ -54,7 +54,7 @@ jobs:
         run: mvn clean install
 
       - name: Deploy to Central
-        run: mvn deploy -P central -pl cron-utils-core,cron-utils-descriptor,cron-utils-converter,cron-utils-validator
+        run: mvn deploy -P central
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
@@ -67,7 +67,5 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            cron-utils-core/target/*.jar
-            cron-utils-descriptor/target/*.jar
-            cron-utils-converter/target/*.jar
-            cron-utils-validator/target/*.jar
+            */target/*.jar
+            */target/*.war

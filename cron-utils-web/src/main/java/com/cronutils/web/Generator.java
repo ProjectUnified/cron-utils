@@ -7,8 +7,18 @@ import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.field.CronFieldName;
+import com.cronutils.model.field.constraint.FieldConstraints;
 import com.cronutils.model.field.definition.FieldDefinition;
+import com.cronutils.model.field.expression.Always;
+import com.cronutils.model.field.expression.And;
+import com.cronutils.model.field.expression.Between;
+import com.cronutils.model.field.expression.Every;
 import com.cronutils.model.field.expression.FieldExpression;
+import com.cronutils.model.field.expression.On;
+import com.cronutils.model.field.expression.visitor.ValidationFieldExpressionVisitor;
+import com.cronutils.model.field.expression.QuestionMark;
+import com.cronutils.model.field.expression.RandomExpression;
+import com.cronutils.model.field.value.SpecialChar;
 import com.cronutils.parser.CronParserField;
 
 import java.util.ArrayList;
@@ -16,6 +26,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Pure cron generator and cross-type mapping logic.
@@ -132,11 +143,11 @@ public final class Generator {
      * Equivalent expressions of {@code cron} in every {@link CronType}.
      * The source type maps to itself via an identity mapper; types without a
      * direct {@link CronMapper} pair from the source, and failed round-trips,
-     * map to {@code "n/a for <TYPE>"}.
+     * map to {@code "not available"}.
      *
      * @param sourceType dialect {@code cron} was parsed with; never null
      * @param cron       valid parsed cron; never null
-     * @return type name to expression or {@code n/a} marker, in {@code CronType} order
+     * @return type name to expression or a {@code "not available"} marker, in {@code CronType} order
      */
     public static Map<String, String> equivalents(CronType sourceType, Cron cron) {
         Map<String, String> result = new LinkedHashMap<>();
@@ -150,11 +161,11 @@ public final class Generator {
         try {
             CronMapper mapper = mapperFor(sourceType, target);
             if (mapper == null) {
-                return "n/a for " + target.name();
+                return "not available";
             }
             return mapper.map(cron).asString();
         } catch (RuntimeException e) {
-            return "n/a for " + target.name();
+            return "not available";
         }
     }
 
@@ -198,5 +209,160 @@ public final class Generator {
             named.put(fieldDefinition.getFieldName().name(), "");
         }
         return named;
+    }
+
+    /**
+     * Builds an expression of {@code type} from a type-agnostic schedule.
+     * Keys are {@link CronFieldName} names; only fields the type defines are
+     * read. Fields the schedule omits fall back to {@code ?} (day fields where
+     * supported), {@code *}, or omission for optional fields. A {@code ?} the
+     * type does not support degrades to {@code *}.
+     *
+     * @param type cron dialect; never null
+     * @param universal field name to value; never null
+     * @return normalized expression string
+     * @throws IllegalArgumentException when the schedule has no valid form
+     * in {@code type} (e.g. dialect-specific specials like {@code L})
+     */
+    public static String buildExample(CronType type, Map<String, String> universal) {
+        return generate(type, exampleInputs(type, universal));
+    }
+
+    /**
+     * Per-field inputs of {@code type} for a type-agnostic schedule.
+     *
+     * @param type cron dialect; never null
+     * @param universal field name to value; never null
+     * @return field name to raw input, in canonical field order; never null
+     */
+    public static Map<String, String> exampleInputs(CronType type, Map<String, String> universal) {
+        CronDefinition definition = CronDefinitionBuilder.instanceDefinitionFor(type);
+        Map<String, String> inputs = new LinkedHashMap<>();
+        for (FieldDefinition fieldDefinition : orderedFields(definition)) {
+            String name = fieldDefinition.getFieldName().name();
+            String value = universal.get(name);
+            if (value == null) {
+                if (fieldDefinition.isOptional()) {
+                    value = "";
+                } else if (isQuestionMarkField(fieldDefinition)) {
+                    value = "?";
+                } else {
+                    value = "*";
+                }
+            } else if ("?".equals(value.trim())
+                    && !fieldDefinition.getConstraints().getSpecialChars().contains(SpecialChar.QUESTION_MARK)) {
+                value = "*";
+            }
+            inputs.put(name, value);
+        }
+        return inputs;
+    }
+
+    private static boolean isQuestionMarkField(FieldDefinition fieldDefinition) {
+        CronFieldName name = fieldDefinition.getFieldName();
+        return (name == CronFieldName.DAY_OF_MONTH || name == CronFieldName.DAY_OF_WEEK)
+                && fieldDefinition.getConstraints().getSpecialChars().contains(SpecialChar.QUESTION_MARK);
+    }
+
+    /**
+     * Short allowed-values hint for one field, e.g.
+     * {@code "0-59 · * , - / · L W"}. Range first, then the always-available
+     * {@code * , - /} operators, then any extra specials ({@code ? # L W LW ~}),
+     * then any name aliases ({@code JAN-DEC}), then {@code optional} if skippable.
+     *
+     * @param definition field definition; never null
+     * @return hint text; never null
+     */
+    public static String hint(FieldDefinition definition) {
+        FieldConstraints constraints = definition.getConstraints();
+        StringBuilder out = new StringBuilder();
+        out.append(constraints.getStartRange()).append('-').append(constraints.getEndRange());
+        out.append(" · * , - /");
+        List<String> specials = new ArrayList<>();
+        for (SpecialChar special : new TreeSet<>(constraints.getSpecialChars())) {
+            String symbol = specialSymbol(special);
+            if (symbol != null) {
+                specials.add(symbol);
+            }
+        }
+        if (!specials.isEmpty()) {
+            out.append(" · ").append(String.join(" ", specials));
+        }
+        TreeSet<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        names.addAll(constraints.getStringMappingKeySet());
+        if (!names.isEmpty()) {
+            out.append(" · ").append(String.join(" ", names));
+        }
+        if (definition.isOptional()) {
+            out.append(" · optional");
+        }
+        return out.toString();
+    }
+
+    /**
+     * One-line meaning of the current raw input for one field, e.g.
+     * {@code "every value"}, {@code "at 12"}, {@code "range 1-5"}.
+     * Invalid input yields {@code "invalid: <reason>"}; empty yields
+     * {@code "omitted"} for optional fields and {@code "required"} otherwise.
+     *
+     * @param definition field definition; never null
+     * @param input raw field text; may be null
+     * @return meaning text; never null
+     */
+    public static String meaning(FieldDefinition definition, String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return definition.isOptional() ? "omitted" : "required";
+        }
+        String text = input.trim();
+        FieldExpression expression;
+        try {
+            expression = new CronParserField(definition.getFieldName(), definition.getConstraints(),
+                    definition.isOptional()).parse(text).getExpression();
+            expression.accept(new ValidationFieldExpressionVisitor(definition.getConstraints()));
+        } catch (IllegalArgumentException e) {
+            String message = e.getMessage();
+            return "invalid" + (message == null ? "" : ": " + message);
+        }
+        if (expression instanceof Always) {
+            return "every value";
+        }
+        if (expression instanceof QuestionMark) {
+            return "no specific value";
+        }
+        if (expression instanceof Between) {
+            return "range " + expression.asString();
+        }
+        if (expression instanceof Every) {
+            return "step " + expression.asString();
+        }
+        if (expression instanceof On) {
+            return "at " + expression.asString();
+        }
+        if (expression instanceof And) {
+            return "list " + expression.asString();
+        }
+        if (expression instanceof RandomExpression) {
+            return "random " + expression.asString();
+        }
+        return expression.asString();
+    }
+
+    private static String specialSymbol(SpecialChar special) {
+        switch (special) {
+            case QUESTION_MARK:
+                return "?";
+            case HASH:
+                return "#";
+            case L:
+                return "L";
+            case W:
+                return "W";
+            case LW:
+                return "LW";
+            case TILDE:
+                return "~";
+            default:
+                return null;
+        }
     }
 }
