@@ -10,15 +10,31 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - name: Install quilt
         run: sudo apt-get update && sudo apt-get install -y quilt
       - name: Sync upstream sources
         run: bash scripts/sync-upstream.sh
 
+      - name: Check for previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git tag --sort=-creatordate | head -n 2 | tail -n 1)
+          CURRENT_TAG=$(git describe --tags --abbrev=0)
+          if [ "$PREV_TAG" = "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
+            echo "first_release=true" >> "$GITHUB_OUTPUT"
+            echo "changelog=This is marked as the first release" >> "$GITHUB_OUTPUT"
+          else
+            echo "first_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate changelog
         id: changelog
-        uses: metcalfc/changelog-generator@v4.6.2
+        if: steps.prev_tag.outputs.first_release == 'false'
+        uses: metcalfc/changelog-generator@v4.7.0
         with:
           myToken: ${{ secrets.GITHUB_TOKEN }}
 
@@ -52,7 +68,7 @@ jobs:
           publish_dir: ./target/reports/apidocs
 
       - name: "Release"
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body: ${{ steps.changelog.outputs.changelog }}
           draft: false
