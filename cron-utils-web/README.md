@@ -25,12 +25,14 @@ snippet in `src/main/webapp/index.html`.
 - Spike A (ResourceBundle) — RED at runtime, fixed by vendoring: lookups
   compile but TeaVM WASM-GC reports "Bundle not found" at runtime (its
   `bundleProviders` map is never populated for the `.properties` files).
-  Per the plan's fallback, `scripts/gen-web-bundles.py` vendors all 18
-  `CronUtilsI18N*.properties` verbatim into `EmbeddedBundleData.java`
-  (ASCII with `\u` escapes, significant trailing spaces preserved), served
-  through an in-memory `ResourceBundle` with per-key English fallback
-  mirroring the JVM parent chain. `EmbeddedBundlesTest` proves every shipped
-  key and every-locale `describe()` output identical to the JVM describer.
+  Per the plan's fallback, the web build generates `EmbeddedBundleData.java`
+  from all 18 `CronUtilsI18N*.properties` (`exec-maven-plugin` runs
+  `scripts/gen-web-bundles.py` in `generate-sources`, `build-helper`
+  adds the output as a source root; ASCII with `\u` escapes, significant
+  trailing spaces preserved), served through an in-memory `ResourceBundle`
+  with per-key English fallback mirroring the JVM parent chain.
+  `EmbeddedBundlesTest` proves every shipped key and every-locale
+  `describe()` output identical to the JVM describer.
   Browser proof: German locale renders `um 12:00` for `0 0 12 * * ?`.
 - Spike B (java.time) — GREEN at runtime: TeaVM compiles the reached JDK
   `java.time` bytecode directly (no classlib emulation needed in the reached

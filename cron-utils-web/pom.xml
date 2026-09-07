@@ -62,6 +62,47 @@
 
     <build>
         <plugins>
+            <!-- Generate EmbeddedBundleData from the descriptor properties. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-embedded-bundles</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>python3</executable>
+                            <arguments>
+                                <argument>${maven.multiModuleProjectDirectory}/scripts/gen-web-bundles.py</argument>
+                                <argument>${project.build.directory}/generated-sources/bundles/com/cronutils/web/EmbeddedBundleData.java</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-bundles</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/bundles</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Include TeaVM WASM-GC output in the webapp root (teavm/ directory). -->
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>

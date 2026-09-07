@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Regenerate the vendored i18n maps for cron-utils-web.
+"""Generate the vendored i18n maps for cron-utils-web.
 
 Reads the 18 CronUtilsI18N*.properties files shipped with
-cron-utils-descriptor and emits
-cron-utils-web/src/main/java/com/cronutils/web/EmbeddedBundleData.java,
-a pure-data holder (one unmodifiable map per locale suffix, ASCII-only
-\\u escapes). Strings are vendored verbatim; never hand-edit the output.
+cron-utils-descriptor and emits EmbeddedBundleData.java, a pure-data
+holder (one unmodifiable map per locale suffix, ASCII-only \\u escapes).
+Strings are vendored verbatim; never hand-edit the output.
 
 TeaVM WASM-GC cannot resolve ResourceBundle.getBundle at runtime
 ("Bundle not found"), so the web module serves these maps through an
@@ -13,8 +12,11 @@ in-memory ResourceBundle instead. Per-key fallback to the base (English)
 map mirrors the JVM ResourceBundle parent chain, including upstream's
 partial translations.
 
-Usage (repo root):
-    python3 scripts/gen-web-bundles.py
+Runs automatically as part of the cron-utils-web Maven build
+(generate-sources); the output path defaults to the build's generated
+sources directory and can be overridden with an argument:
+
+    python3 scripts/gen-web-bundles.py [OUT]
 """
 import re
 import sys
@@ -22,7 +24,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "cron-utils-descriptor/src/main/resources/com/cronutils"
-OUT = ROOT / "cron-utils-web/src/main/java/com/cronutils/web/EmbeddedBundleData.java"
+DEFAULT_OUT = (ROOT / "cron-utils-web/target/generated-sources/bundles"
+               / "com/cronutils/web/EmbeddedBundleData.java")
+OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_OUT
 
 
 def parse_properties(path):
@@ -135,6 +139,7 @@ def main():
         "}",
         "",
     ]
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(parts), encoding="ascii")
     total = sum(len(v) for v in locales.values()) + len(base)
     print("wrote %s (%d locales, %d entries)" % (OUT, len(locales) + 1, total))
