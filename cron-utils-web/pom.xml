@@ -65,7 +65,7 @@
             <!-- Include TeaVM WASM-GC output in the webapp root (teavm/ directory). -->
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>3.4.0</version>
+                <version>3.5.1</version>
                 <configuration>
                     <webResources>
                         <resource>
