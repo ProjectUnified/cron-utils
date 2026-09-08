@@ -19,6 +19,7 @@ import com.cronutils.model.field.expression.visitor.ValidationFieldExpressionVis
 import com.cronutils.model.field.expression.QuestionMark;
 import com.cronutils.model.field.expression.RandomExpression;
 import com.cronutils.model.field.value.SpecialChar;
+import com.cronutils.parser.CronParser;
 import com.cronutils.parser.CronParserField;
 
 import java.util.ArrayList;
@@ -170,6 +171,37 @@ public final class Generator {
     }
 
     /**
+     * Maps {@code expression} (parsed and validated as {@code sourceType}) to
+     * an equivalent expression of {@code targetType}, for carrying the
+     * schedule over when the user switches cron types. Returns null when the
+     * dialects do not map (no direct {@link CronMapper} pair, a failed
+     * round-trip) or when the expression is invalid for the source type.
+     *
+     * @param sourceType dialect {@code expression} is written in; never null
+     * @param expression raw expression; may be null or empty (yields null)
+     * @param targetType dialect to map to; never null
+     * @return mapped expression, or null when no mapping exists; never empty
+     */
+    public static String carryOver(CronType sourceType, String expression, CronType targetType) {
+        if (sourceType == null || targetType == null || expression == null
+                || expression.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            CronDefinition definition = CronDefinitionBuilder.instanceDefinitionFor(sourceType);
+            Cron cron = new CronParser(definition).parse(expression.trim());
+            cron.validate();
+            CronMapper mapper = mapperFor(sourceType, targetType);
+            if (mapper == null) {
+                return null;
+            }
+            return mapper.map(cron).asString();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /**
      * Direct static {@link CronMapper} pair for {@code sourceType} to {@code target},
      * or null where no direct pair exists. Same-type targets map via identity.
      */
@@ -265,6 +297,24 @@ public final class Generator {
     }
 
     /**
+     * Initial builder value for one field: {@code "?"} for day-of-week where
+     * supported, {@code "*"} otherwise. Day-of-month always defaults to
+     * {@code "*"} so the two day fields never open as {@code "?"} plus
+     * {@code "?"} — a valid schedule that matches no day and yields no
+     * upcoming runs. Never null.
+     *
+     * @param definition field definition; never null
+     * @return default raw input; never null
+     */
+    public static String defaultValue(FieldDefinition definition) {
+        if (definition.getFieldName() == CronFieldName.DAY_OF_WEEK
+                && definition.getConstraints().getSpecialChars().contains(SpecialChar.QUESTION_MARK)) {
+            return "?";
+        }
+        return "*";
+    }
+
+    /**
      * Short allowed-values hint for one field, e.g.
      * {@code "0-59 · * , - / · L W"}. Range first, then the always-available
      * {@code * , - /} operators, then any extra specials ({@code ? # L W LW ~}),
@@ -345,6 +395,334 @@ public final class Generator {
             return "random " + expression.asString();
         }
         return expression.asString();
+    }
+
+    /**
+     * Clickable starter values for one field: up to four hand-picked,
+     * intuitive candidates that actually validate against the field's own
+     * constraints (unsupported specials silently drop out). Never empty and
+     * never null; every entry parses and validates.
+     *
+     * @param definition field definition; never null
+     * @return 1-4 ready-to-use values; never null
+     */
+    public static List<String> quickValues(FieldDefinition definition) {
+        List<String> candidates = new ArrayList<>();
+        switch (definition.getFieldName()) {
+            case SECOND:
+            case MINUTE:
+                Collections.addAll(candidates, "*", "0", "*/15", "5,10");
+                break;
+            case HOUR:
+                Collections.addAll(candidates, "*", "12", "9-17", "*/2");
+                break;
+            case DAY_OF_MONTH:
+                Collections.addAll(candidates, "*", "1", "1-5", "?", "L", "15W");
+                break;
+            case MONTH:
+                Collections.addAll(candidates, "*", "1", "JAN", "1-6");
+                break;
+            case DAY_OF_WEEK:
+                Collections.addAll(candidates, "*", "MON", "MON-FRI", "?", "MON#2");
+                break;
+            case YEAR:
+                Collections.addAll(candidates, "*", "2026", "2026-2030", "*/5");
+                break;
+            case DAY_OF_YEAR:
+                Collections.addAll(candidates, "*", "1", "1-100", "*/30");
+                break;
+            default:
+                Collections.addAll(candidates, "*");
+                break;
+        }
+        List<String> result = new ArrayList<>();
+        for (String candidate : candidates) {
+            if (result.size() >= 4) {
+                break;
+            }
+            if (!result.contains(candidate) && validValue(definition, candidate)) {
+                result.add(candidate);
+            }
+        }
+        if (result.isEmpty()) {
+            result.add("*");
+        }
+        return result;
+    }
+
+    /**
+     * One teachable syntax row: the shape ({@code pattern}), a concrete
+     * value for this exact field ({@code example}) and what it does
+     * ({@code explains}). An empty {@code example} means "leave the field
+     * empty" (optional fields only).
+     */
+    public static final class SyntaxItem {
+        /** Shape, e.g. {@code "a-b"} or {@code "?"}. Never null. */
+        public final String pattern;
+        /** Concrete value for this field, e.g. {@code "1-5"}. Never null. */
+        public final String example;
+        /** Plain-language effect. Never null. */
+        public final String explains;
+
+        public SyntaxItem(String pattern, String example, String explains) {
+            this.pattern = pattern;
+            this.example = example;
+            this.explains = explains;
+        }
+    }
+
+    /**
+     * Teachable operator rows tailored to one field: every/single/range/step
+     * /list shapes with range-aware examples, then name aliases and the
+     * supported specials ({@code ? L W LW # ~}) with concrete values, then
+     * the empty-value row for optional fields. Rows whose example does not
+     * validate for this field are omitted. Never null.
+     *
+     * @param definition field definition; never null
+     * @return syntax rows; never null
+     */
+    public static List<SyntaxItem> syntaxGuide(FieldDefinition definition) {
+        List<SyntaxItem> guide = new ArrayList<>();
+        guide.add(new SyntaxItem("*", "*", "every value in this field"));
+        String single = pickSingle(definition);
+        guide.add(new SyntaxItem("n", single, "exactly at " + single));
+        String range = pickRange(definition);
+        if (range != null) {
+            int dash = range.indexOf('-');
+            String from = dash < 0 ? range : range.substring(0, dash);
+            String to = dash < 0 ? range : range.substring(dash + 1);
+            guide.add(new SyntaxItem("a-b", range, "every value from " + from + " through " + to));
+        }
+        String step = pickStep(definition);
+        if (step != null) {
+            guide.add(new SyntaxItem(step.startsWith("*") ? "*/n" : "a/n", step,
+                    "every step through this field (" + step + ")"));
+        }
+        String list = pickList(definition);
+        if (list != null) {
+            guide.add(new SyntaxItem("a,b,...", list, "exactly these values (" + list + ")"));
+        }
+        TreeSet<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        names.addAll(definition.getConstraints().getStringMappingKeySet());
+        if (!names.isEmpty()) {
+            String first = names.first();
+            guide.add(new SyntaxItem("NAME", first,
+                    "names work too (" + String.join(", ", names) + ")"));
+        }
+        if (definition.getConstraints().getSpecialChars().contains(SpecialChar.QUESTION_MARK)) {
+            guide.add(new SyntaxItem("?", "?",
+                    "no specific value: use when the other day field is set"));
+        }
+        if (definition.getConstraints().getSpecialChars().contains(SpecialChar.L)) {
+            guide.add(new SyntaxItem("L", "L", "the last value in this field"));
+        }
+        if (definition.getConstraints().getSpecialChars().contains(SpecialChar.W)) {
+            String w = firstValid(definition, "15W", "1W");
+            if (w != null) {
+                guide.add(new SyntaxItem("nW", w, "the weekday nearest day " + w.substring(0, w.length() - 1)));
+            }
+        }
+        if (definition.getConstraints().getSpecialChars().contains(SpecialChar.LW)) {
+            guide.add(new SyntaxItem("LW", "LW", "the last weekday of the month"));
+        }
+        if (definition.getConstraints().getSpecialChars().contains(SpecialChar.HASH)) {
+            String hash = firstValid(definition, "MON#2", "2#1");
+            if (hash != null) {
+                guide.add(new SyntaxItem("n#m", hash, "the nth weekday, e.g. " + hash));
+            }
+        }
+        if (definition.getConstraints().getSpecialChars().contains(SpecialChar.TILDE)) {
+            if (validValue(definition, "~")) {
+                guide.add(new SyntaxItem("~", "~", "a random value in this field"));
+            }
+        }
+        if (definition.isOptional()) {
+            guide.add(new SyntaxItem("(empty)", "", "leave empty to omit this optional field"));
+        }
+        return guide;
+    }
+
+    private static String pickSingle(FieldDefinition definition) {
+        int start = toInt(definition.getConstraints().getStartRange());
+        int end = toInt(definition.getConstraints().getEndRange());
+        int preferred;
+        switch (definition.getFieldName()) {
+            case SECOND:
+            case MINUTE:
+                preferred = 5;
+                break;
+            case HOUR:
+                preferred = 12;
+                break;
+            case DAY_OF_MONTH:
+                preferred = 15;
+                break;
+            case MONTH:
+                preferred = 6;
+                break;
+            case DAY_OF_WEEK:
+                preferred = 3;
+                break;
+            case YEAR:
+                preferred = 2026;
+                break;
+            case DAY_OF_YEAR:
+                preferred = 100;
+                break;
+            default:
+                preferred = start;
+                break;
+        }
+        int value = (preferred >= start && preferred <= end) ? preferred : start;
+        String text = String.valueOf(value);
+        return validValue(definition, text) ? text : "*";
+    }
+
+    private static String pickRange(FieldDefinition definition) {
+        String preferred;
+        switch (definition.getFieldName()) {
+            case SECOND:
+            case MINUTE:
+                preferred = "0-10";
+                break;
+            case HOUR:
+                preferred = "9-17";
+                break;
+            case DAY_OF_MONTH:
+                preferred = "1-5";
+                break;
+            case MONTH:
+                preferred = "1-6";
+                break;
+            case DAY_OF_WEEK:
+                preferred = "MON-FRI";
+                break;
+            case YEAR:
+                preferred = "2026-2030";
+                break;
+            case DAY_OF_YEAR:
+                preferred = "1-100";
+                break;
+            default:
+                preferred = null;
+                break;
+        }
+        String hit = preferred == null ? null : firstValid(definition, preferred);
+        if (hit != null) {
+            return hit;
+        }
+        int start = toInt(definition.getConstraints().getStartRange());
+        int end = toInt(definition.getConstraints().getEndRange());
+        if (end > start) {
+            String generic = start + "-" + Math.min(start + 4, end);
+            if (validValue(definition, generic)) {
+                return generic;
+            }
+        }
+        return null;
+    }
+
+    private static String pickStep(FieldDefinition definition) {
+        String preferred;
+        switch (definition.getFieldName()) {
+            case SECOND:
+            case MINUTE:
+                preferred = "*/15";
+                break;
+            case HOUR:
+                preferred = "*/2";
+                break;
+            case DAY_OF_MONTH:
+                preferred = "*/5";
+                break;
+            case MONTH:
+                preferred = "*/2";
+                break;
+            case DAY_OF_WEEK:
+                preferred = "*/2";
+                break;
+            case YEAR:
+                preferred = "*/5";
+                break;
+            case DAY_OF_YEAR:
+                preferred = "*/30";
+                break;
+            default:
+                preferred = null;
+                break;
+        }
+        return preferred == null ? null : firstValid(definition, preferred);
+    }
+
+    private static String pickList(FieldDefinition definition) {
+        String preferred;
+        switch (definition.getFieldName()) {
+            case SECOND:
+            case MINUTE:
+                preferred = "5,10";
+                break;
+            case HOUR:
+                preferred = "9,12";
+                break;
+            case DAY_OF_MONTH:
+                preferred = "1,15";
+                break;
+            case MONTH:
+                preferred = "1,6";
+                break;
+            case DAY_OF_WEEK:
+                preferred = "MON,WED";
+                break;
+            case YEAR:
+                preferred = "2026,2027";
+                break;
+            case DAY_OF_YEAR:
+                preferred = "1,100";
+                break;
+            default:
+                preferred = null;
+                break;
+        }
+        String hit = preferred == null ? null : firstValid(definition, preferred);
+        if (hit != null) {
+            return hit;
+        }
+        int start = toInt(definition.getConstraints().getStartRange());
+        int end = toInt(definition.getConstraints().getEndRange());
+        if (end > start) {
+            String generic = start + "," + Math.min(start + 1, end);
+            if (validValue(definition, generic)) {
+                return generic;
+            }
+        }
+        return null;
+    }
+
+    private static String firstValid(FieldDefinition definition, String... texts) {
+        for (String text : texts) {
+            if (validValue(definition, text)) {
+                return text;
+            }
+        }
+        return null;
+    }
+
+    private static boolean validValue(FieldDefinition definition, String text) {
+        try {
+            FieldExpression expression = new CronParserField(definition.getFieldName(),
+                    definition.getConstraints(), definition.isOptional()).parse(text).getExpression();
+            expression.accept(new ValidationFieldExpressionVisitor(definition.getConstraints()));
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private static int toInt(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return Integer.parseInt(String.valueOf(value));
     }
 
     private static String specialSymbol(SpecialChar special) {

@@ -100,14 +100,15 @@ public final class Explainer {
     }
 
     /**
-     * Short readable form of a run, e.g. {@code "Thu, 1 Jan 2026, 12:00 (+00:00)"}.
+     * Short readable form of a run, e.g. {@code "Thu, 1 Jan 2026, 12:00:30 (+00:00)"}.
      * Always English so it renders identically for every description language.
+     * Seconds are always shown so second-precision schedules read correctly.
      *
      * @param dateTime run; never null
      * @return display text; never null
      */
     public static String display(ZonedDateTime dateTime) {
-        return DateTimeFormatter.ofPattern("EEE, d MMM yyyy, HH:mm (xxx)", Locale.ENGLISH)
+        return DateTimeFormatter.ofPattern("EEE, d MMM yyyy, HH:mm:ss (xxx)", Locale.ENGLISH)
                 .format(dateTime);
     }
 

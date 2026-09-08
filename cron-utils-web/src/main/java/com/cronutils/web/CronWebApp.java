@@ -30,10 +30,10 @@ import java.util.Map;
  * Single TeaVM entry point. Builds every DOM node from Java; the shipped
  * {@code index.html} is only a shell (loader + stylesheet link).
  *
- * <p>Page shape: {@code header} intro, {@code main} with the generator
- * (per-field builder, expression preview, cross-type equivalents, expandable
- * examples) and the explainer (type plus expression only; time and zone always
- * come from the browser), then {@code footer}.</p>
+ * <p>Page shape: {@code header} intro, {@code main} with the shared cron-type
+ * section and the generator (per-field builder, editable expression box with
+ * copy, plain reading plus upcoming runs, cross-type equivalents, expandable
+ * examples; time and zone always come from the browser), then {@code footer}.</p>
  */
 public class CronWebApp {
 
@@ -86,27 +86,26 @@ public class CronWebApp {
 
     private static HTMLDocument doc;
 
-    private static HTMLSelectElement explType;
-    private static HTMLInputElement explInput;
-    private static HTMLSelectElement explLocale;
-    private static HTMLElement explMessage;
-    private static HTMLElement explReading;
-    private static HTMLElement explSchedule;
-    private static HTMLElement explNormalized;
-    private static HTMLElement explDescription;
-    private static HTMLElement explMeta;
-    private static HTMLElement explRuns;
-    private static HTMLElement explSection;
+    private static HTMLSelectElement cronType;
+    private static CronType previousType = CronType.QUARTZ;
 
-    private static HTMLSelectElement genType;
+    private static HTMLInputElement genExpression;
+    private static HTMLElement genCopyNote;
+    private static HTMLSelectElement genLocale;
+    private static HTMLElement genStatus;
+    private static HTMLElement genReading;
+    private static HTMLElement genSchedule;
+    private static HTMLElement genNormalized;
+    private static HTMLElement genDescription;
+    private static HTMLElement genRunsMeta;
+    private static HTMLElement genRuns;
+
     private static HTMLElement genFields;
     private static HTMLElement genMessage;
-    private static HTMLElement genTokens;
     private static HTMLElement genEquiv;
     private static final List<HTMLInputElement> genInputs = new ArrayList<>();
     private static final List<FieldDefinition> genDefs = new ArrayList<>();
     private static final List<HTMLElement> genMeanings = new ArrayList<>();
-    private static final List<HTMLElement> genExampleCodes = new ArrayList<>();
     private static String lastGoodGenerated = "";
 
     public static void main(String[] args) {
@@ -123,22 +122,11 @@ public class CronWebApp {
         main.setAttribute("class", "site-main");
         doc.getBody().appendChild(main);
 
+        main.appendChild(buildTypeBar());
         main.appendChild(buildGenerator());
-        explSection = buildExplainer();
-        main.appendChild(explSection);
 
         buildFooter();
-        safeRefreshExplainer();
         safeRebuildGeneratorFields();
-    }
-
-    private static void safeRefreshExplainer() {
-        try {
-            refreshExplainer();
-        } catch (Throwable t) {
-            explMessage.setTextContent("Explainer failed: " + t);
-            explMessage.setAttribute("class", "error");
-        }
     }
 
     private static void safeRebuildGeneratorFields() {
@@ -150,7 +138,69 @@ public class CronWebApp {
      }
 
     // ------------------------------------------------------------------
-    // Generator section (builder + preview + equivalents + examples)
+    // Shared cron type (one selector drives the single tool below)
+    // ------------------------------------------------------------------
+
+    private static HTMLElement buildTypeBar() {
+        HTMLElement section = el("section", null);
+        section.setAttribute("id", "cron-type-section");
+        section.setAttribute("class", "card typebar");
+        section.appendChild(el("h2", "Cron type"));
+        section.appendChild(el("p", "This type drives the builder and the reading below. Switching carries your schedule over where the dialects map."));
+        HTMLElement row = el("div", null);
+        row.setAttribute("class", "row");
+        cronType = select(TYPES, "QUARTZ");
+        cronType.setAttribute("id", "cron-type");
+        HTMLElement typeLabel = el("label", "Cron type ");
+        typeLabel.setAttribute("for", "cron-type");
+        typeLabel.appendChild(cronType);
+        row.appendChild(typeLabel);
+        section.appendChild(row);
+        cronType.addEventListener("change", e -> onTypeChange());
+        return section;
+    }
+
+    /** Rebuilds the fields for the newly selected type, carrying the current
+     * schedule over where the dialects map and resetting otherwise. */
+    private static void onTypeChange() {
+        CronType next;
+        try {
+            next = currentType();
+        } catch (RuntimeException e) {
+            return;
+        }
+        CronType prev = previousType;
+        previousType = next;
+        String current = lastGoodGenerated;
+        if (current == null || current.isEmpty()) {
+            String box = genExpression.getValue();
+            current = box == null ? "" : box.trim();
+        }
+        safeRebuildGeneratorFields();
+        if (current.isEmpty() || prev == next) {
+            return;
+        }
+        String carried = Generator.carryOver(prev, current, next);
+        if (carried == null) {
+            genMessage.setTextContent("Could not carry the schedule over to "
+                    + next.name() + "; fields were reset.");
+            return;
+        }
+        try {
+            applyExpression(next, carried);
+            genMessage.setTextContent("");
+        } catch (IllegalArgumentException e) {
+            genMessage.setTextContent(e.getMessage() == null ? "Could not reuse schedule." : e.getMessage());
+        }
+        refreshGenerator();
+    }
+
+    private static CronType currentType() {
+        return CronType.valueOf(cronType.getValue());
+    }
+
+    // ------------------------------------------------------------------
+    // Generator section (builder + expression + reading + equivalents + examples)
     // ------------------------------------------------------------------
 
     private static HTMLElement buildGenerator() {
@@ -158,18 +208,7 @@ public class CronWebApp {
         section.setAttribute("id", "generator");
         section.setAttribute("class", "card");
         section.appendChild(el("h2", "Generator"));
-        section.appendChild(el("p", "Pick a cron type, fill each field, and watch the expression take shape. Every field shows its allowed range, names and extras, plus a live reading of the value you typed."));
-
-        HTMLElement typeRow = el("div", null);
-        typeRow.setAttribute("class", "row");
-        genType = select(TYPES, "QUARTZ");
-        genType.setAttribute("id", "gen-type");
-        HTMLElement typeLabel = el("label", "Cron type ");
-        typeLabel.setAttribute("for", "gen-type");
-        typeLabel.appendChild(genType);
-        typeRow.appendChild(typeLabel);
-        section.appendChild(typeRow);
-
+        section.appendChild(el("p", "Fill each field below, or paste an expression straight into the Expression box. Every card shows its allowed values, clickable starters, a syntax shelf with examples, and a live reading of the value you typed."));
         genFields = el("div", null);
         genFields.setAttribute("class", "field-grid");
         genFields.setAttribute("role", "group");
@@ -193,34 +232,108 @@ public class CronWebApp {
         genMessage.setAttribute("role", "status");
         section.appendChild(genMessage);
 
-        HTMLElement preview = el("figure", null);
-        preview.setAttribute("class", "preview");
-        preview.appendChild(el("figcaption", "Expression"));
-        genTokens = el("code", null);
-        genTokens.setAttribute("id", "gen-expression");
-        preview.appendChild(genTokens);
-        HTMLElement explainBtn = el("button", "Explain this expression");
-        explainBtn.setAttribute("type", "button");
-        explainBtn.setAttribute("class", "ghost");
-        explainBtn.addEventListener("click", e -> sendToExplainer());
-        preview.appendChild(explainBtn);
-        section.appendChild(preview);
+        section.appendChild(buildExpressionRow());
+        section.appendChild(buildReading());
 
-        HTMLElement equivTitle = el("h3", "Same schedule in other cron types");
-        section.appendChild(equivTitle);
+        HTMLElement equivSection = el("section", null);
+        equivSection.setAttribute("class", "equiv-block");
+        equivSection.appendChild(el("h3", "Same schedule in other cron types"));
         genEquiv = el("dl", null);
         genEquiv.setAttribute("id", "gen-equivalents");
         genEquiv.setAttribute("class", "equiv");
-        section.appendChild(genEquiv);
+        equivSection.appendChild(genEquiv);
+        section.appendChild(equivSection);
 
         section.appendChild(buildExamples());
 
-        genType.addEventListener("change", e -> safeRebuildGeneratorFields());
         return section;
     }
 
+    /** Editable expression box with copy button and language picker. */
+    private static HTMLElement buildExpressionRow() {
+        HTMLElement wrap = el("div", null);
+        wrap.setAttribute("class", "expr-block");
+        wrap.appendChild(el("h3", "Expression"));
+        HTMLElement row = el("div", null);
+        row.setAttribute("class", "row expr-row");
+        genExpression = textInput("");
+        genExpression.setAttribute("id", "gen-expression");
+        genExpression.setAttribute("name", "gen-expression");
+        genExpression.setAttribute("autocomplete", "off");
+        genExpression.setAttribute("spellcheck", "false");
+        HTMLElement exprLabel = el("label", "Expression ");
+        exprLabel.setAttribute("for", "gen-expression");
+        exprLabel.appendChild(genExpression);
+        row.appendChild(exprLabel);
+        genLocale = select(LOCALES, "en_GB");
+        genLocale.setAttribute("id", "gen-locale");
+        HTMLElement localeLabel = el("label", "Language ");
+        localeLabel.setAttribute("for", "gen-locale");
+        localeLabel.appendChild(genLocale);
+        row.appendChild(localeLabel);
+        wrap.appendChild(row);
+        HTMLElement copyRow = el("div", null);
+        copyRow.setAttribute("class", "copy-row");
+        HTMLElement copyBtn = el("button", "Copy expression");
+        copyBtn.setAttribute("type", "button");
+        copyBtn.setAttribute("id", "gen-copy");
+        copyBtn.addEventListener("click", e -> copyExpression());
+        copyRow.appendChild(copyBtn);
+        genCopyNote = el("small", "");
+        genCopyNote.setAttribute("id", "gen-copy-note");
+        genCopyNote.setAttribute("class", "meta");
+        genCopyNote.setAttribute("role", "status");
+        copyRow.appendChild(genCopyNote);
+        wrap.appendChild(copyRow);
+        genExpression.addEventListener("input", e -> onExpressionInput());
+        genLocale.addEventListener("change", e -> refreshReading());
+        return wrap;
+    }
+
+    /** Plain reading plus upcoming runs for the current expression. */
+    private static HTMLElement buildReading() {
+        HTMLElement wrap = el("div", null);
+        wrap.setAttribute("class", "read-block");
+        genStatus = el("p", "");
+        genStatus.setAttribute("id", "gen-status");
+        genStatus.setAttribute("role", "status");
+        wrap.appendChild(genStatus);
+        HTMLElement grid = el("div", null);
+        grid.setAttribute("class", "read-grid");
+        genReading = el("article", null);
+        genReading.setAttribute("id", "gen-reading");
+        genReading.setAttribute("class", "panel");
+        genReading.appendChild(el("h3", "What it means"));
+        genDescription = el("p", "");
+        genDescription.setAttribute("id", "gen-description");
+        genDescription.setAttribute("class", "lede");
+        genReading.appendChild(genDescription);
+        HTMLElement standard = el("p", "Standard form: ");
+        standard.setAttribute("class", "standard");
+        genNormalized = el("code", "");
+        genNormalized.setAttribute("id", "gen-normalized");
+        standard.appendChild(genNormalized);
+        genReading.appendChild(standard);
+        grid.appendChild(genReading);
+        genSchedule = el("article", null);
+        genSchedule.setAttribute("id", "gen-schedule");
+        genSchedule.setAttribute("class", "panel");
+        genSchedule.appendChild(el("h3", "Upcoming runs"));
+        genRuns = el("ol", null);
+        genRuns.setAttribute("id", "gen-runs");
+        genRuns.setAttribute("class", "timeline");
+        genSchedule.appendChild(genRuns);
+        genRunsMeta = el("p", "");
+        genRunsMeta.setAttribute("id", "gen-runs-meta");
+        genRunsMeta.setAttribute("class", "meta");
+        genSchedule.appendChild(genRunsMeta);
+        grid.appendChild(genSchedule);
+        wrap.appendChild(grid);
+        return wrap;
+    }
+
     private static void rebuildGeneratorFields() {
-        CronType type = CronType.valueOf(genType.getValue());
+        CronType type = currentType();
         CronDefinition definition = CronDefinitionBuilder.instanceDefinitionFor(type);
         clearChildren(genFields);
         genInputs.clear();
@@ -247,7 +360,7 @@ public class CronWebApp {
             input.setAttribute("name", id);
             input.setAttribute("autocomplete", "off");
             input.setAttribute("spellcheck", "false");
-            input.setAttribute("aria-describedby", "hint-" + name + " meaning-" + name);
+            input.setAttribute("aria-describedby", "hint-" + name + " meaning-" + name + " guide-" + name);
             genInputs.add(input);
             wrap.appendChild(input);
 
@@ -255,6 +368,9 @@ public class CronWebApp {
             hint.setAttribute("id", "hint-" + name);
             hint.setAttribute("class", "hint");
             wrap.appendChild(hint);
+
+            wrap.appendChild(buildQuickRow(field, input));
+            wrap.appendChild(buildFieldGuide(field));
 
             HTMLElement meaning = el("small", "");
             meaning.setAttribute("id", "meaning-" + name);
@@ -266,21 +382,82 @@ public class CronWebApp {
             genFields.appendChild(wrap);
         }
         refreshGenerator();
-        updateExamplePreviews();
+    }
+
+    /** Clickable starter values: each chip fills its field and refreshes the generator. */
+    private static HTMLElement buildQuickRow(FieldDefinition field, HTMLInputElement input) {
+        HTMLElement row = el("div", null);
+        row.setAttribute("class", "try");
+        row.appendChild(el("span", "Try: "));
+        for (String value : Generator.quickValues(field)) {
+            final String starter = value;
+            HTMLElement chip = el("button", starter);
+            chip.setAttribute("type", "button");
+            chip.setAttribute("title", "Use " + starter + " in " + humanName(field.getFieldName()));
+            chip.addEventListener("click", e -> {
+                input.setValue(starter);
+                refreshGenerator();
+            });
+            row.appendChild(chip);
+        }
+        return row;
+    }
+
+    /** Teachable operator shelf for one field: shape, clickable example, plain effect. */
+    private static HTMLElement buildFieldGuide(FieldDefinition field) {
+        String name = field.getFieldName().name();
+        HTMLElement details = el("details", null);
+        details.setAttribute("class", "guide");
+        details.setAttribute("id", "guide-" + name);
+        details.appendChild(el("summary", "How to write " + humanName(field.getFieldName()).toLowerCase() + " values"));
+        HTMLElement list = el("ul", null);
+        for (Generator.SyntaxItem item : Generator.syntaxGuide(field)) {
+            final Generator.SyntaxItem current = item;
+            HTMLElement row = el("li", null);
+            row.appendChild(el("code", current.pattern));
+            row.appendChild(doc.createTextNode(" "));
+            if (current.example.isEmpty()) {
+                HTMLElement clear = el("button", "clear field");
+                clear.setAttribute("type", "button");
+                clear.setAttribute("class", "ghost");
+                clear.addEventListener("click", e -> {
+                    for (int i = 0; i < genDefs.size(); i++) {
+                        if (genDefs.get(i).getFieldName() == field.getFieldName()) {
+                            genInputs.get(i).setValue("");
+                        }
+                    }
+                    refreshGenerator();
+                });
+                row.appendChild(clear);
+            } else {
+                final String example = current.example;
+                HTMLElement use = el("button", example);
+                use.setAttribute("type", "button");
+                use.setAttribute("class", "ghost");
+                use.setAttribute("title", "Use " + example);
+                use.addEventListener("click", e -> {
+                    for (int i = 0; i < genDefs.size(); i++) {
+                        if (genDefs.get(i).getFieldName() == field.getFieldName()) {
+                            genInputs.get(i).setValue(example);
+                        }
+                    }
+                    refreshGenerator();
+                });
+                row.appendChild(use);
+            }
+            row.appendChild(doc.createTextNode(" - " + current.explains));
+            list.appendChild(row);
+        }
+        details.appendChild(list);
+        return details;
     }
 
     private static String defaultFieldText(FieldDefinition field) {
-        CronFieldName name = field.getFieldName();
-        if ((name == CronFieldName.DAY_OF_MONTH || name == CronFieldName.DAY_OF_WEEK)
-                && field.getConstraints().getSpecialChars().contains(
-                        com.cronutils.model.field.value.SpecialChar.QUESTION_MARK)) {
-            return "?";
-        }
-        return "*";
+        return Generator.defaultValue(field);
     }
 
     private static void refreshGenerator() {
-        CronType type = CronType.valueOf(genType.getValue());
+        CronType type = currentType();
         Map<String, String> inputs = new LinkedHashMap<>();
         for (int i = 0; i < genDefs.size(); i++) {
             inputs.put(genDefs.get(i).getFieldName().name(), genInputs.get(i).getValue());
@@ -297,34 +474,17 @@ public class CronWebApp {
         try {
             lastGoodGenerated = Generator.generate(type, inputs);
             genMessage.setTextContent("");
-            renderTokens(type, lastGoodGenerated);
+            genExpression.setValue(lastGoodGenerated);
             renderEquivalents(type, lastGoodGenerated);
         } catch (IllegalArgumentException e) {
             genMessage.setTextContent(e.getMessage() == null ? "Invalid field input." : e.getMessage());
-            if (!lastGoodGenerated.isEmpty()) {
-                renderTokens(type, lastGoodGenerated);
-            } else {
-                clearChildren(genTokens);
-                genTokens.setTextContent("—");
+            if (lastGoodGenerated.isEmpty()) {
                 clearChildren(genEquiv);
+            } else {
+                renderEquivalents(type, lastGoodGenerated);
             }
         }
-    }
-
-    /** Expression preview: one tinted token per field, titled with the field name. */
-    private static void renderTokens(CronType type, String expression) {
-        clearChildren(genTokens);
-        String[] parts = expression.split(" ");
-        for (int i = 0; i < parts.length; i++) {
-            if (i > 0) {
-                genTokens.appendChild(doc.createTextNode(" "));
-            }
-            HTMLElement token = el("span", parts[i]);
-            String field = i < genDefs.size() ? genDefs.get(i).getFieldName().name() : "extra";
-            token.setAttribute("class", "tok tok-" + field.toLowerCase().replace('_', '-'));
-            token.setAttribute("title", field);
-            genTokens.appendChild(token);
-        }
+        refreshReading();
     }
 
     /** Cross-type equivalents for the last good generated expression. */
@@ -355,7 +515,7 @@ public class CronWebApp {
     }
 
     private static void applyPreset(String preset) {
-        CronType type = CronType.valueOf(genType.getValue());
+        CronType type = currentType();
         try {
             applyExpression(type, Generator.preset(type, preset));
             genMessage.setTextContent("");
@@ -383,17 +543,12 @@ public class CronWebApp {
         HTMLElement details = el("details", null);
         details.setAttribute("class", "examples");
         details.appendChild(el("summary", "Examples"));
-        details.appendChild(el("p", "Pick one to load it into the generator using the cron type selected above."));
+        details.appendChild(el("p", "Pick one to load it into the generator using the shared cron type above."));
         HTMLElement list = el("ul", null);
-        genExampleCodes.clear();
         for (Example example : EXAMPLES) {
             final Example current = example;
             HTMLElement item = el("li", null);
             item.appendChild(el("strong", current.label + " "));
-            HTMLElement preview = el("code", "");
-            genExampleCodes.add(preview);
-            item.appendChild(preview);
-            item.appendChild(doc.createTextNode(" "));
             HTMLElement load = el("button", "Use this");
             load.setAttribute("type", "button");
             load.setAttribute("class", "ghost");
@@ -405,25 +560,9 @@ public class CronWebApp {
         return details;
     }
 
-    /** Refreshes each example's built expression for the current generator type. */
-    private static void updateExamplePreviews() {
-        CronType type;
-        try {
-            type = CronType.valueOf(genType.getValue());
-        } catch (RuntimeException e) {
-            return;
-        }
-        for (int i = 0; i < EXAMPLES.length && i < genExampleCodes.size(); i++) {
-            try {
-                genExampleCodes.get(i).setTextContent(Generator.buildExample(type, EXAMPLES[i].fields));
-            } catch (IllegalArgumentException e) {
-                genExampleCodes.get(i).setTextContent("Not available in " + type.name());
-            }
-        }
-    }
 
     private static void loadExample(Example example) {
-        CronType type = CronType.valueOf(genType.getValue());
+        CronType type = currentType();
         try {
             applyExpression(type, Generator.buildExample(type, example.fields));
             genMessage.setTextContent("");
@@ -433,164 +572,107 @@ public class CronWebApp {
         }
     }
 
-    private static void sendToExplainer() {
-        if (lastGoodGenerated.isEmpty()) {
+
+    // ------------------------------------------------------------------
+    // Expression box: paste to fill the fields, copy to take it elsewhere
+    // ------------------------------------------------------------------
+
+    private static void onExpressionInput() {
+        String text = genExpression.getValue();
+        if (text == null || text.trim().isEmpty()) {
+            genMessage.setTextContent("");
+            refreshReading();
             return;
         }
-        explType.setValue(genType.getValue());
-        explInput.setValue(lastGoodGenerated);
-        safeRefreshExplainer();
+        try {
+            applyExpression(currentType(), text.trim());
+            genMessage.setTextContent("");
+        } catch (IllegalArgumentException e) {
+            genMessage.setTextContent(e.getMessage() == null ? "Cannot use here." : e.getMessage());
+        }
+        refreshReading();
     }
 
-    // ------------------------------------------------------------------
-    // Explainer section (type + expression; time and zone are the browser's)
-    // ------------------------------------------------------------------
-
-    private static HTMLElement buildExplainer() {
-        HTMLElement section = el("section", null);
-        section.setAttribute("id", "explainer");
-        section.setAttribute("class", "card");
-        section.appendChild(el("h2", "Explainer"));
-        section.appendChild(el("p", "Paste any expression and get a plain reading plus the next times it fires, counted from right now in your own timezone."));
-
-        HTMLElement controls = el("div", null);
-        controls.setAttribute("class", "row");
-
-        explType = select(TYPES, "QUARTZ");
-        explType.setAttribute("id", "expl-type");
-        HTMLElement typeLabel = el("label", "Cron type ");
-        typeLabel.setAttribute("for", "expl-type");
-        typeLabel.appendChild(explType);
-        controls.appendChild(typeLabel);
-
-        explInput = textInput("0 0 12 * * ?");
-        explInput.setAttribute("id", "expl-expression");
-        explInput.setAttribute("name", "expl-expression");
-        explInput.setAttribute("autocomplete", "off");
-        explInput.setAttribute("spellcheck", "false");
-        HTMLElement exprLabel = el("label", "Expression ");
-        exprLabel.setAttribute("for", "expl-expression");
-        exprLabel.appendChild(explInput);
-        controls.appendChild(exprLabel);
-
-        explLocale = select(LOCALES, "en_GB");
-        explLocale.setAttribute("id", "expl-locale");
-        HTMLElement localeLabel = el("label", "Language ");
-        localeLabel.setAttribute("for", "expl-locale");
-        localeLabel.appendChild(explLocale);
-        controls.appendChild(localeLabel);
-
-        section.appendChild(controls);
-
-        explMessage = el("p", "");
-        explMessage.setAttribute("id", "expl-message");
-        explMessage.setAttribute("role", "status");
-        section.appendChild(explMessage);
-
-        HTMLElement grid = el("div", null);
-        grid.setAttribute("class", "expl-grid");
-
-        explReading = el("article", null);
-        explReading.setAttribute("id", "expl-reading");
-        explReading.setAttribute("class", "panel");
-        explReading.appendChild(el("h3", "What it means"));
-        explDescription = el("p", "");
-        explDescription.setAttribute("id", "expl-description");
-        explDescription.setAttribute("class", "lede");
-        explReading.appendChild(explDescription);
-        HTMLElement standard = el("p", "Standard form: ");
-        standard.setAttribute("class", "standard");
-        explNormalized = el("code", "");
-        explNormalized.setAttribute("id", "expl-normalized");
-        standard.appendChild(explNormalized);
-        explReading.appendChild(standard);
-        grid.appendChild(explReading);
-
-        explSchedule = el("article", null);
-        explSchedule.setAttribute("id", "expl-schedule");
-        explSchedule.setAttribute("class", "panel");
-        explSchedule.appendChild(el("h3", "Upcoming runs"));
-        explRuns = el("ol", null);
-        explRuns.setAttribute("id", "expl-runs");
-        explRuns.setAttribute("class", "timeline");
-        explSchedule.appendChild(explRuns);
-        explMeta = el("p", "");
-        explMeta.setAttribute("id", "expl-meta");
-        explMeta.setAttribute("class", "meta");
-        explSchedule.appendChild(explMeta);
-        grid.appendChild(explSchedule);
-        section.appendChild(grid);
-
-        HTMLElement editBtn = el("button", "Edit in generator");
-        editBtn.setAttribute("type", "button");
-        editBtn.setAttribute("class", "ghost");
-        editBtn.addEventListener("click", e -> sendToGenerator());
-        section.appendChild(editBtn);
-
-        explType.addEventListener("change", e -> safeRefreshExplainer());
-        explInput.addEventListener("input", e -> safeRefreshExplainer());
-        explLocale.addEventListener("change", e -> safeRefreshExplainer());
-
-        return section;
-    }
-
-    private static void refreshExplainer() {
-        CronType type = CronType.valueOf(explType.getValue());
-        Locale locale = toLocale(explLocale.getValue());
+    private static void refreshReading() {
+        CronType type = currentType();
+        Locale locale = toLocale(genLocale.getValue());
         ZoneId zone = systemZone();
         ZonedDateTime from = systemNow(zone);
 
-        ExplainResult result = Explainer.explain(type, explInput.getValue(), locale, zone, from);
+        ExplainResult result = Explainer.explain(type, genExpression.getValue(), locale, zone, from);
         if (result.hint) {
-            explMessage.setTextContent("Enter a cron expression above (nicknames like @yearly work too).");
-            explMessage.setAttribute("class", "hint");
-            explMessage.setHidden(false);
-            explReading.setHidden(true);
-            explSchedule.setHidden(true);
+            genStatus.setTextContent("Type or paste a cron expression above.");
+            genStatus.setAttribute("class", "hint");
+            genStatus.setHidden(false);
+            genReading.setHidden(true);
+            genSchedule.setHidden(true);
         } else if (!result.ok) {
-            explMessage.setTextContent(result.error == null ? "Invalid expression." : result.error);
-            explMessage.setAttribute("class", "error");
-            explMessage.setHidden(false);
-            explReading.setHidden(true);
-            explSchedule.setHidden(true);
+            genStatus.setTextContent(result.error == null ? "Invalid expression." : result.error);
+            genStatus.setAttribute("class", "error");
+            genStatus.setHidden(false);
+            genReading.setHidden(true);
+            genSchedule.setHidden(true);
         } else {
-            explMessage.setTextContent("");
-            explMessage.setAttribute("class", "");
-            explMessage.setHidden(true);
-            explReading.setHidden(false);
-            explSchedule.setHidden(false);
-            explDescription.setTextContent(result.description);
-            explNormalized.setTextContent(result.normalized);
-            explMeta.setTextContent("Checked from " + Explainer.display(from) + " in " + zone.getId() + " (your system time).");
-            clearChildren(explRuns);
+            genStatus.setTextContent("");
+            genStatus.setAttribute("class", "");
+            genStatus.setHidden(true);
+            genReading.setHidden(false);
+            genSchedule.setHidden(false);
+            genDescription.setTextContent(result.description);
+            genNormalized.setTextContent(result.normalized);
+            genRunsMeta.setTextContent("Checked from " + Explainer.display(from) + " in " + zone.getId() + " (your system time).");
+            clearChildren(genRuns);
             if (result.nextRuns.isEmpty()) {
-                explRuns.appendChild(el("li", "No upcoming executions found."));
+                genRuns.appendChild(el("li", "No upcoming executions found."));
             } else {
                 for (ZonedDateTime run : result.nextRuns) {
                     HTMLElement item = el("li", null);
                     HTMLElement time = el("time", Explainer.display(run));
                     time.setAttribute("datetime", run.toString());
                     item.appendChild(time);
-                    explRuns.appendChild(item);
+                    genRuns.appendChild(item);
                 }
             }
         }
     }
 
-    private static void sendToGenerator() {
-        String expression = explInput.getValue();
-        if (expression == null || expression.trim().isEmpty()) {
+    private static void copyExpression() {
+        String text = genExpression.getValue();
+        if (text == null || text.trim().isEmpty()) {
+            genCopyNote.setTextContent("Nothing to copy yet.");
             return;
         }
-        genType.setValue(explType.getValue());
-        rebuildGeneratorFields();
-        try {
-            applyExpression(CronType.valueOf(genType.getValue()), expression.trim());
-            genMessage.setTextContent("");
-        } catch (IllegalArgumentException e) {
-            genMessage.setTextContent(e.getMessage() == null ? "Cannot edit here." : e.getMessage());
+        if (jsCopy(text)) {
+            genCopyNote.setTextContent("Copied.");
+        } else {
+            genExpression.focus();
+            genExpression.select();
+            genCopyNote.setTextContent("Copy failed in this browser: the expression is selected, press Ctrl+C.");
         }
     }
+
+    // NOTE: the clipboard fast path is fire-and-forget: writeText returns a
+    // promise we do not await (@JSBody is synchronous), so true there only
+    // means the API is present. The execCommand fallback is synchronous and
+    // covers insecure contexts (plain http on a non-localhost host, embedding
+    // iframes) where navigator.clipboard does not exist.
+    @JSBody(params = {"text"},
+            script = "try {"
+            + " if (navigator.clipboard && navigator.clipboard.writeText)"
+            + " { navigator.clipboard.writeText(text); return true; }"
+            + " var ta = document.createElement('textarea');"
+            + " ta.value = text;"
+            + " ta.setAttribute('readonly', '');"
+            + " ta.style.position = 'absolute';"
+            + " ta.style.left = '-9999px';"
+            + " document.body.appendChild(ta);"
+            + " ta.select();"
+            + " var ok = false;"
+            + " try { ok = document.execCommand('copy'); } catch (e) { ok = false; }"
+            + " document.body.removeChild(ta);"
+            + " return ok;"
+            + "} catch (e) { return false; }")
+    private static native boolean jsCopy(String text);
 
     // ------------------------------------------------------------------
     // Browser clock: system zone name + current millis via JS interop

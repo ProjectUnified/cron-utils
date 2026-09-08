@@ -9,18 +9,19 @@ snippet in `src/main/webapp/index.html`.
 
 - `src/main/java/com/cronutils/web/CronWebApp.java` — TeaVM entry point
   (`mainClass`); builds every DOM node via TeaVM JSO APIs: `header` intro,
-  `main` with the generator section (per-field builder, expression preview,
-  cross-type equivalents, expandable `details` examples) and the explainer
-  section (type plus expression only; time and zone come from the browser via
+  `main` with the shared cron-type section (switching types carries the
+  current schedule over where the dialects map, resets otherwise) and the
+  single generator section (per-field builder, editable expression box with
+  copy button, plain reading plus next runs, cross-type equivalents,
+  expandable `details` examples; time and zone come from the browser via
   JS interop), then `footer`.
 - `src/main/java/com/cronutils/web/Explainer.java` — pure parse → validate →
-  describe → next-5-runs logic (no DOM).
+  describe → next-5-runs logic (no DOM); renders the generator's reading.
 - `src/main/java/com/cronutils/web/Generator.java` — pure per-field builder,
   nickname presets, cross-type equivalents, plus per-field `hint` (allowed
-  range, names, extras) and `meaning` (live reading of the current value)
-  (no DOM).
-- `src/main/webapp/index.html` — static shell (loader + stylesheet link).
-- `src/main/webapp/style.css` — single stylesheet, zero framework.
+  range, names, extras), `meaning` (live reading of the current value),
+  `quickValues` (clickable starter values) and `syntaxGuide` (teachable
+  operator rows with field-tailored examples) (no DOM).
 
 - Spike A (ResourceBundle) — RED at runtime, fixed by vendoring: lookups
   compile but TeaVM WASM-GC reports "Bundle not found" at runtime (its
@@ -56,7 +57,9 @@ stay green.
 ## Build and preview
 
 - `mvn -pl cron-utils-web -am clean package`
-- `python3 -m http.server 8080 --directory cron-utils-web/target/pages`
+- `bash scripts/preview-web.sh` (serves `cron-utils-web/target/pages` at
+  `http://localhost:8080`; pass `--build` to rebuild first, or a port number
+  to listen elsewhere)
   (`file://` WASM loads are refused by browsers; always preview over HTTP.
   `target/pages` is the exploded webapp `web-deploy.yml` uploads to Pages.)
 - Open `http://localhost:8080` in a WASM-GC-capable Chromium:
