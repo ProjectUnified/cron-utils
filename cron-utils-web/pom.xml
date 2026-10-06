@@ -14,7 +14,7 @@
     <packaging>war</packaging>
 
     <properties>
-        <teavm.version>0.15.0</teavm.version>
+        <teavm.version>0.16.0</teavm.version>
         <!-- Static site: never publish to Maven Central, sign, or attach sources/javadoc. -->
         <maven.deploy.skip>true</maven.deploy.skip>
         <gpg.skip>true</gpg.skip>
