@@ -1,6 +1,6 @@
 --- a/cron-utils-converter/src/main/java/com/cronutils/converter/CalendarToCronTransformer.java
 +++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CalendarToCronTransformer.java
-@@ -19,9 +19,6 @@
+@@ -19,9 +19,6 @@ public class CalendarToCronTransformer extends BaseCronTransformer {
  	protected void transform() {
  		String updatedValue = String
  				.valueOf(calendarInstance.get(calendarField));

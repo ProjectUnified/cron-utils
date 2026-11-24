@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/test/java/com/cronutils/Issue480Test.java
 +++ b/cron-utils-core/src/test/java/com/cronutils/Issue480Test.java
-@@ -7,8 +7,6 @@
+@@ -7,8 +7,6 @@ import com.cronutils.model.definition.CronDefinition;
  import com.cronutils.model.definition.CronDefinitionBuilder;
  import com.cronutils.model.time.ExecutionTime;
  import org.junit.jupiter.api.Test;
@@ -9,7 +9,7 @@
  
  import java.time.*;
  import java.time.temporal.ChronoUnit;
-@@ -21,8 +19,6 @@
+@@ -21,8 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
  
  public class Issue480Test {
  
@@ -18,7 +18,7 @@
      private static final CronDefinition definition = CronDefinitionBuilder.defineCron()
              .withMinutes().and()
              .withHours().and()
-@@ -42,16 +38,13 @@
+@@ -42,16 +38,13 @@ public class Issue480Test {
          assertEquals(sunday.getDayOfWeek(), DayOfWeek.SUNDAY);
          Clock clock = Clock.fixed(sunday.toInstant(ZoneOffset.UTC), ZoneId.systemDefault());
          ZonedDateTime now = ZonedDateTime.now(clock);
@@ -35,7 +35,7 @@
  
          assertTrue(nextRun.truncatedTo(ChronoUnit.MINUTES)
                  .isEqual(nowPlusWeek.truncatedTo(ChronoUnit.MINUTES)));
-@@ -74,7 +67,6 @@
+@@ -74,7 +67,6 @@ public class Issue480Test {
          if (!next.isPresent()) {
              fail();
          }

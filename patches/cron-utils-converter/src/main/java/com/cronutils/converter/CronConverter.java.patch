@@ -10,7 +10,7 @@
  import java.time.ZoneId;
  import java.util.Calendar;
  import java.util.TimeZone;
-@@ -24,14 +21,9 @@
+@@ -24,14 +21,9 @@ import com.cronutils.utils.StringUtils;
  
  public class CronConverter {
  
@@ -25,7 +25,7 @@
  
  	private CronToCalendarTransformer toCalendarConverter;
  	private CalendarToCronTransformer toCronConverter;
-@@ -42,39 +34,25 @@
+@@ -42,39 +34,25 @@ public class CronConverter {
  	}
  
  	public CronConverter using(String cronExpression) {

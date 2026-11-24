@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/test/java/com/cronutils/builder/CronBuilderQuartzIntegrationTest.java
 +++ b/cron-utils-core/src/test/java/com/cronutils/builder/CronBuilderQuartzIntegrationTest.java
-@@ -74,4 +74,16 @@
+@@ -74,4 +74,16 @@ public class CronBuilderQuartzIntegrationTest {
  
          assertEquals("0 1 13 ? * 1 *", cron.asString());
      }

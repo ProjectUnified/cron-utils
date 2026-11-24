@@ -1,0 +1,21 @@
+{
+  "upstream": "https://github.com/jmrozanec/cron-utils.git",
+  "refFile": "upstream.ref",
+  "patches": "patches",
+  "baselineDir": ".vanilla",
+  "upstreamDir": ".upstream",
+  "materialize": "bash scripts/gitfile-split.sh",
+  "paths": [
+    "cron-utils-core/src",
+    "cron-utils-descriptor/src",
+    "cron-utils-converter/src",
+    "cron-utils-validator/src"
+  ],
+  "exportFile": "cron-utils-fork.patch",
+  "exportRewrite": [
+    ["cron-utils-core/src/", "src/"],
+    ["cron-utils-descriptor/src/", "src/"],
+    ["cron-utils-converter/src/", "src/"],
+    ["cron-utils-validator/src/", "src/"]
+  ]
+}

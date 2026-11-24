@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/main/java/com/cronutils/model/time/CompositeExecutionTime.java
 +++ b/cron-utils-core/src/main/java/com/cronutils/model/time/CompositeExecutionTime.java
-@@ -18,7 +18,7 @@
+@@ -18,7 +18,7 @@ public class CompositeExecutionTime implements ExecutionTime {
  
      @Override
      public Optional<ZonedDateTime> nextExecution(ZonedDateTime date) {
@@ -9,7 +9,7 @@
                  (o1, o2) -> {
                      if(o1.isPresent() && o2.isPresent()){
                          ZonedDateTime first = o1.get();
-@@ -39,7 +39,7 @@
+@@ -39,7 +39,7 @@ public class CompositeExecutionTime implements ExecutionTime {
  
      @Override
      public Optional<ZonedDateTime> lastExecution(ZonedDateTime date) {
@@ -18,7 +18,7 @@
                  (o1, o2) -> {
                      if(o1.isPresent() && o2.isPresent()){
                          ZonedDateTime first = o1.get();
-@@ -58,6 +58,6 @@
+@@ -58,6 +58,6 @@ public class CompositeExecutionTime implements ExecutionTime {
  
      @Override
      public boolean isMatch(ZonedDateTime date) {

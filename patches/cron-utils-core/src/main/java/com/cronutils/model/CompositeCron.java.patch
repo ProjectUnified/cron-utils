@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/main/java/com/cronutils/model/CompositeCron.java
 +++ b/cron-utils-core/src/main/java/com/cronutils/model/CompositeCron.java
-@@ -6,6 +6,7 @@
+@@ -6,6 +6,7 @@ import com.cronutils.model.field.CronField;
  import com.cronutils.model.field.CronFieldName;
  import com.cronutils.utils.Preconditions;
  
@@ -8,7 +8,7 @@
  import java.util.Collections;
  import java.util.List;
  import java.util.Map;
-@@ -49,7 +50,7 @@
+@@ -49,7 +50,7 @@ public class CompositeCron implements Cron {
                  fieldbuilder.append(String.format("%s ", pattern.split(" ")[j]));
              }
              String fieldstring = fieldbuilder.toString().trim().replaceAll(" ", "|");

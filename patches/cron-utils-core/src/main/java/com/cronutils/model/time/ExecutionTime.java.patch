@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/main/java/com/cronutils/model/time/ExecutionTime.java
 +++ b/cron-utils-core/src/main/java/com/cronutils/model/time/ExecutionTime.java
-@@ -20,8 +20,11 @@
+@@ -20,8 +20,11 @@ import com.cronutils.model.field.CronField;
  import com.cronutils.model.field.CronFieldName;
  
  import java.time.Duration;
@@ -12,7 +12,7 @@
  import java.util.stream.Collectors;
  
  /**
-@@ -74,7 +77,7 @@
+@@ -74,7 +77,7 @@ public interface ExecutionTime {
              return executionTimeBuilder.build();
          }
          if (cron instanceof CompositeCron) {
@@ -21,10 +21,11 @@
          }
  
          return new ExecutionTime() {
-@@ -114,6 +117,50 @@
+@@ -113,6 +116,50 @@ public interface ExecutionTime {
+      */
      Optional<ZonedDateTime> nextExecution(final ZonedDateTime date);
  
-     /**
++    /**
 +     * Provide nearest date for next execution.
 +     *
 +     * @param instant - Instant instance. If null, a NullPointerException will be raised.
@@ -68,14 +69,14 @@
 +        return next.isPresent() ? OptionalLong.of(next.get().toEpochMilli()) : OptionalLong.empty();
 +    }
 +
-+    /**
+     /**
       * Provide nearest time for next execution.
       *
-      * Due to the question #468 we clarify: crons execute on local instance time.
-@@ -128,6 +175,48 @@
+@@ -127,6 +174,48 @@ public interface ExecutionTime {
+      */
      Optional<Duration> timeToNextExecution(final ZonedDateTime date);
  
-     /**
++    /**
 +     * Provide nearest time for next execution.
 +     *
 +     * @param instant - Instant instance. If null, a NullPointerException will be raised.
@@ -117,14 +118,14 @@
 +        return timeToNextExecution(Instant.ofEpochMilli(millis), zoneId);
 +    }
 +
-+    /**
+     /**
       * Provide nearest date for last execution.
       *
-      * Due to the question #468 we clarify: crons execute on local instance time.
-@@ -142,6 +231,50 @@
+@@ -141,6 +230,50 @@ public interface ExecutionTime {
+      */
      Optional<ZonedDateTime> lastExecution(final ZonedDateTime date);
  
-     /**
++    /**
 +     * Provide nearest date for last execution.
 +     *
 +     * @param instant - Instant instance. If null, a NullPointerException will be raised.
@@ -168,14 +169,14 @@
 +        return last.isPresent() ? OptionalLong.of(last.get().toEpochMilli()) : OptionalLong.empty();
 +    }
 +
-+    /**
+     /**
       * Provide nearest time from last execution.
       *
-      * @param date - ZonedDateTime instance. If null, a NullPointerException will be raised.
-@@ -150,6 +283,48 @@
+@@ -149,6 +282,48 @@ public interface ExecutionTime {
+      */
      Optional<Duration> timeFromLastExecution(final ZonedDateTime date);
  
-     /**
++    /**
 +     * Provide nearest time from last execution.
 +     *
 +     * @param instant - Instant instance. If null, a NullPointerException will be raised.
@@ -217,14 +218,14 @@
 +        return timeFromLastExecution(Instant.ofEpochMilli(millis), zoneId);
 +    }
 +
-+    /**
+     /**
       * Provide feedback if a given date matches the cron expression.
       *
-      * @param date - ZonedDateTime instance. If null, a NullPointerException will be raised.
-@@ -158,6 +333,48 @@
+@@ -157,6 +332,48 @@ public interface ExecutionTime {
+      */
      boolean isMatch(ZonedDateTime date);
  
-     /**
++    /**
 +     * Provide feedback if a given date matches the cron expression.
 +     *
 +     * @param instant - Instant instance. If null, a NullPointerException will be raised.
@@ -266,14 +267,14 @@
 +        return isMatch(Instant.ofEpochMilli(millis), zoneId);
 +    }
 +
-+    /**
+     /**
       * Provide count of times cron expression would execute between given start and end dates
       *
-      * @param startDate - Start date. If null, a NullPointerException will be raised.
-@@ -169,6 +386,52 @@
+@@ -168,6 +385,52 @@ public interface ExecutionTime {
+         return getExecutionDates(startDate, endDate).size();
      }
  
-     /**
++    /**
 +     * Provide count of times cron expression would execute between given start and end dates
 +     *
 +     * @param startInstant - Start date. If null, a NullPointerException will be raised.
@@ -319,11 +320,10 @@
 +        return countExecutions(Instant.ofEpochMilli(startMillis), Instant.ofEpochMilli(endMillis), zoneId);
 +    }
 +
-+    /**
+     /**
       * Provide date times when cron expression would execute between given start and end dates.
       * End date should be after start date. Otherwise, IllegalArgumentException is raised
-      *
-@@ -190,4 +453,54 @@
+@@ -190,4 +453,54 @@ public interface ExecutionTime {
          }
          return executions;
      }

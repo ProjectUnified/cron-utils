@@ -10,7 +10,7 @@
  import java.util.Calendar;
  import java.util.Collections;
  import java.util.HashMap;
-@@ -25,9 +22,6 @@
+@@ -25,9 +22,6 @@ import com.cronutils.utils.StringUtils;
  
  public abstract class BaseCronTransformer {
  

@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/test/java/com/cronutils/model/time/ExecutionTimeCron4jIntegrationTest.java
 +++ b/cron-utils-core/src/test/java/com/cronutils/model/time/ExecutionTimeCron4jIntegrationTest.java
-@@ -12,8 +12,6 @@
+@@ -12,8 +12,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
  import com.cronutils.parser.CronParser;
  import org.junit.jupiter.api.BeforeEach;
  import org.junit.jupiter.api.Test;
@@ -9,7 +9,7 @@
  
  import java.time.DayOfWeek;
  import java.time.Month;
-@@ -30,10 +28,7 @@
+@@ -30,10 +28,7 @@ public class ExecutionTimeCron4jIntegrationTest {
      private static final String EVERY_15_MINUTES = "0/15 * * * *";
      private static final String EVERY_2_HOURS = "0 0/2 * * *";
      private static final String EVERY_WEEKDAY_AT_6 = "0 6 * * MON-FRI";
@@ -20,7 +20,7 @@
  
      @BeforeEach
      public void setUp() {
-@@ -60,8 +55,6 @@
+@@ -60,8 +55,6 @@ public class ExecutionTimeCron4jIntegrationTest {
              final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
              if (nextExecution.isPresent()) {
                  final ZonedDateTime nextRun = nextExecution.get();
@@ -29,7 +29,7 @@
  
                  assertNotEquals(DayOfWeek.SATURDAY, nextRun.getDayOfWeek());
                  assertNotEquals(DayOfWeek.SUNDAY, nextRun.getDayOfWeek());
-@@ -88,8 +81,6 @@
+@@ -88,8 +81,6 @@ public class ExecutionTimeCron4jIntegrationTest {
              final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
              if (nextExecution.isPresent()) {
                  final ZonedDateTime nextRun = nextExecution.get();
@@ -38,7 +38,7 @@
  
                  assertTrue(nextRun.getHour() % 2 == 0, String.format("Hour is %s", nextRun.getHour()));
                  assertTrue(lastRun.isBefore(nextRun), String.format("Last run is before next one: %s", lastRun.isBefore(nextRun)));
-@@ -112,8 +103,6 @@
+@@ -112,8 +103,6 @@ public class ExecutionTimeCron4jIntegrationTest {
              final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
              if (nextExecution.isPresent()) {
                  final ZonedDateTime nextRun = nextExecution.get();
@@ -47,7 +47,7 @@
  
                  assertTrue(nextRun.getHour() % 2 == 0, String.format("Hour is %s", nextRun.getHour()));
                  assertTrue(lastRun.isBefore(nextRun), String.format("Last run is before next one: %s", lastRun.isBefore(nextRun)));
-@@ -139,8 +128,6 @@
+@@ -139,8 +128,6 @@ public class ExecutionTimeCron4jIntegrationTest {
              final Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(lastRun);
              if (nextExecution.isPresent()) {
                  final ZonedDateTime nextRun = nextExecution.get();
@@ -56,7 +56,7 @@
  
                  assertTrue(nextRun.getMinute() % 15 == 0);
                  assertTrue(lastRun.isBefore(nextRun));
-@@ -246,14 +233,11 @@
+@@ -246,14 +233,11 @@ public class ExecutionTimeCron4jIntegrationTest {
          final int dayOfMonth = random.nextInt(Month.of(month).maxLength()) + 1;
          final String expression = String.format("0 0 %d %d %d", dayOfMonth, month, dayOfWeekValue);
          final ExecutionTime executionTime = ExecutionTime.forCron(cron4jCronParser.parse(expression));

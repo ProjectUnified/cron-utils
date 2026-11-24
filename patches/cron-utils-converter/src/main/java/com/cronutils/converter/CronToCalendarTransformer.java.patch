@@ -1,6 +1,6 @@
 --- a/cron-utils-converter/src/main/java/com/cronutils/converter/CronToCalendarTransformer.java
 +++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CronToCalendarTransformer.java
-@@ -17,9 +17,6 @@
+@@ -17,9 +17,6 @@ public class CronToCalendarTransformer extends BaseCronTransformer {
  
  	@Override
  	protected void transform() {

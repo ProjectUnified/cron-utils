@@ -112,14 +112,17 @@ buildNumber.properties
 
 # Common working directory
 run/
-# Generated module sources (populated by scripts/sync-upstream.sh, never committed)
+# Generated module sources (populated by `gitfile sync`, never committed)
 cron-utils-core/src/
 cron-utils-descriptor/src/
 cron-utils-converter/src/
 cron-utils-validator/src/
 
-# Pristine split baseline (populated by scripts/sync-upstream.sh, never committed)
+# Pristine split baseline (populated by `gitfile sync`, never committed)
 .vanilla/
 
-# Pinned upstream checkout (populated by scripts/sync-upstream.sh)
+# Pinned upstream checkout (populated by `gitfile sync`)
 .upstream/
+
+# Combined patch from `gitfile export`
+cron-utils-fork.patch

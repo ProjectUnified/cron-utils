@@ -1,6 +1,6 @@
 --- a/cron-utils-core/src/main/java/com/cronutils/builder/CronBuilder.java
 +++ b/cron-utils-core/src/main/java/com/cronutils/builder/CronBuilder.java
-@@ -23,8 +23,10 @@
+@@ -23,8 +23,10 @@ import com.cronutils.model.field.constraint.FieldConstraints;
  import com.cronutils.model.field.definition.FieldDefinition;
  import com.cronutils.model.field.expression.FieldExpression;
  import com.cronutils.model.field.expression.On;
@@ -11,7 +11,7 @@
  import com.cronutils.utils.VisibleForTesting;
  
  import java.util.ArrayList;
-@@ -32,6 +34,7 @@
+@@ -32,6 +34,7 @@ import java.util.EnumMap;
  import java.util.Map;
  
  import static com.cronutils.model.field.CronFieldName.*;
@@ -19,7 +19,7 @@
  import static com.cronutils.utils.Preconditions.checkState;
  
  public class CronBuilder {
-@@ -86,102 +89,95 @@
+@@ -86,102 +89,95 @@ public class CronBuilder {
  
  
  
@@ -29,12 +29,6 @@
 -        CronBuilder builder = new CronBuilder(definition);
 -        if(definition.containsFieldDefinition(SECOND)){
 -            builder = builder.withSecond(new On(new IntegerFieldValue(0)));
--        }
--        if(definition.containsFieldDefinition(MINUTE)){
--            builder = builder.withMinute(new On(new IntegerFieldValue(0)));
--        }
--        if(definition.containsFieldDefinition(HOUR)){
--            builder = builder.withHour(new On(new IntegerFieldValue(0)));
 +    private static Cron cron(
 +            CronDefinition definition,
 +            FieldExpression second,
@@ -48,28 +42,32 @@
 +        CronBuilder builder = CronBuilder.cron(definition);
 +        if (definition.containsFieldDefinition(SECOND)) {
 +            builder = builder.withSecond(second);
-+        }
+         }
+-        if(definition.containsFieldDefinition(MINUTE)){
+-            builder = builder.withMinute(new On(new IntegerFieldValue(0)));
 +        if (definition.containsFieldDefinition(MINUTE)) {
 +            builder = builder.withMinute(minute);
-+        }
+         }
+-        if(definition.containsFieldDefinition(HOUR)){
+-            builder = builder.withHour(new On(new IntegerFieldValue(0)));
 +        if (definition.containsFieldDefinition(HOUR)) {
 +            builder = builder.withHour(hour);
-+        }
-+        if (definition.containsFieldDefinition(DAY_OF_MONTH)) {
-+            builder = builder.withDoM(dayOfMonth);
          }
 -        if(definition.containsFieldDefinition(DAY_OF_MONTH)){
 -            builder = builder.withDoM(new On(new IntegerFieldValue(1)));
-+        if (definition.containsFieldDefinition(MONTH)) {
-+            builder = builder.withMonth(month);
++        if (definition.containsFieldDefinition(DAY_OF_MONTH)) {
++            builder = builder.withDoM(dayOfMonth);
          }
 -        if(definition.containsFieldDefinition(MONTH)){
 -            builder = builder.withMonth(new On(new IntegerFieldValue(1)));
-+        if (definition.containsFieldDefinition(DAY_OF_WEEK)) {
-+            builder = builder.withDoW(dayOfWeek);
++        if (definition.containsFieldDefinition(MONTH)) {
++            builder = builder.withMonth(month);
          }
 -        if(definition.containsFieldDefinition(DAY_OF_WEEK)){
 -            builder = builder.withDoW(FieldExpression.always());
++        if (definition.containsFieldDefinition(DAY_OF_WEEK)) {
++            builder = builder.withDoW(dayOfWeek);
++        }
 +        if (definition.containsFieldDefinition(YEAR)) {
 +            builder = builder.withYear(year);
          }
@@ -193,7 +191,7 @@
      }
  
      public static Cron midnight(final CronDefinition definition){
-@@ -189,32 +185,32 @@
+@@ -189,32 +185,32 @@ public class CronBuilder {
      }
  
      public static Cron hourly(final CronDefinition definition){

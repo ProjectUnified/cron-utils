@@ -42,29 +42,37 @@ no series and no apply order: each patch owns exactly one file, so two changes
 to the same file are the same patch and can never conflict. Version mapping:
 `fork 2.x == upstream <SHA in upstream.ref> + patches/`.
 
-Prereqs: `git`, JDK 21, Maven.
+The patch engine is [GitFile](https://github.com/ProjectUnified/GitFile); the
+project-specific package split lives in `scripts/lib-split.sh` and is wired in
+through `gitfile.json`.
+
+Prereqs: `git`, JDK 21, Maven, and `gitfile`:
 
 ```sh
-bash scripts/sync-upstream.sh && mvn clean package
+pipx install git+https://github.com/ProjectUnified/GitFile.git
 ```
 
-`sync-upstream.sh` builds two trees: `.vanilla/` (pristine split, used as the
-diff baseline) and the working module trees with every patch applied.
+```sh
+gitfile sync && mvn clean package
+```
+
+`gitfile sync` builds two trees: `.vanilla/` (pristine split, used as the diff
+baseline) and the working module trees with every patch applied.
 
 | Task | Command |
 |---|---|
-| Edit code | `bash scripts/sync-upstream.sh`, edit any module source, then `bash scripts/update-patches.sh` |
-| Add a file | create it under a module `src/`, then `bash scripts/update-patches.sh` (writes a `/dev/null` patch) |
-| Delete a file | `rm` it, then `bash scripts/update-patches.sh` (writes a deletion patch) |
-| Drop a change | restore the file to its pristine content, then `bash scripts/update-patches.sh` (the patch is removed) |
-| Verify from scratch | `bash scripts/sync-upstream.sh && mvn clean package` |
-| Upgrade upstream | re-resolve `git ls-remote https://github.com/jmrozanec/cron-utils.git HEAD` into `upstream.ref`, then `bash scripts/sync-upstream.sh`; regenerate with `update-patches.sh` if a patch needs adjusting |
+| Edit code | `gitfile sync`, edit any module source, then `gitfile update` |
+| Add a file | create it under a module `src/`, then `gitfile update` (writes a `/dev/null` patch) |
+| Delete a file | `rm` it, then `gitfile update` (writes a deletion patch) |
+| Drop a change | restore the file to its pristine content, then `gitfile update` (the patch is removed) |
+| Verify from scratch | `gitfile sync && mvn clean package` |
+| Export a combined patch for upstream | `gitfile export` (`cron-utils-fork.patch`, paths rewritten to upstream `src/`) |
+| Upgrade upstream | re-resolve `git ls-remote https://github.com/jmrozanec/cron-utils.git HEAD` into `upstream.ref`, then `gitfile sync`. Conflicting patches are three-way merged; resolve markers/`.rej` files and run `gitfile update` |
 
-Rules: edit the working tree, never the `.vanilla` baseline. `update-patches.sh`
-requires a successful `sync-upstream.sh` run (the `.vanilla/.patches-applied`
-marker), so it cannot turn an unpatched tree into deletion patches.
-`sync-upstream.sh` is the reset hatch and discards unrecorded working-tree
-edits.
+Rules: edit the working tree, never the `.vanilla` baseline. `gitfile update`
+requires a successful `gitfile sync` (the `.vanilla/.gitfile-applied` marker),
+so it cannot turn an unpatched tree into deletion patches. `gitfile sync` is
+the reset hatch and discards unrecorded working-tree edits.
 
 ## Features
 
