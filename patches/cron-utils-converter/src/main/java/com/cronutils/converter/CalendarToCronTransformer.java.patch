@@ -1,0 +1,13 @@
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/CalendarToCronTransformer.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CalendarToCronTransformer.java
+@@ -19,9 +19,6 @@
+ 	protected void transform() {
+ 		String updatedValue = String
+ 				.valueOf(calendarInstance.get(calendarField));
+-		LOGGER.debug(
+-				"Updating cron field at position {} with {}, using calendar field {}",
+-				cronFieldPosition, updatedValue, calendarField);
+ 		cronParts[cronFieldPosition] = updatedValue;
+ 	}
+ }
+\ No newline at end of file

@@ -118,8 +118,8 @@ cron-utils-descriptor/src/
 cron-utils-converter/src/
 cron-utils-validator/src/
 
-# Quilt patch state (see scripts/; patches/series is the order truth)
-.pc/
+# Pristine split baseline (populated by scripts/sync-upstream.sh, never committed)
+.vanilla/
 
 # Pinned upstream checkout (populated by scripts/sync-upstream.sh)
 .upstream/

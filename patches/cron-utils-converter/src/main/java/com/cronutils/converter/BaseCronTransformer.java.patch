@@ -1,0 +1,22 @@
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/BaseCronTransformer.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/BaseCronTransformer.java
+@@ -13,9 +13,6 @@
+ 
+ package com.cronutils.converter;
+ 
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+-
+ import java.util.Calendar;
+ import java.util.Collections;
+ import java.util.HashMap;
+@@ -25,9 +22,6 @@
+ 
+ public abstract class BaseCronTransformer {
+ 
+-	protected static final Logger LOGGER = LoggerFactory
+-			.getLogger(BaseCronTransformer.class);
+-
+ 	protected String[] cronParts;
+ 
+ 	protected Calendar calendarInstance;

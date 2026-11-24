@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Rebuild everything from the pinned upstream commit: fresh-clone .upstream,
-# split its single-module sources into the 4 module trees, copy overlays,
-# then `quilt push -a --fuzz=0` the patches/series stack. No arguments.
-# This is also the reset hatch: it wipes quilt state (.pc/) and rebuilds.
+# split its single-module sources into the 4 module trees twice — once into
+# .vanilla (the pristine baseline used for regeneration) and once into the
+# working tree — then apply every per-file patch with `git apply -p1`.
+# No arguments. This is also the reset hatch: it wipes .vanilla and any
+# unpatched working-tree edits, then rebuilds deterministically.
 set -euo pipefail
 export LC_ALL=C
-export QUILT_PATCHES=patches
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -18,7 +19,7 @@ if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
     exit 1
 fi
 
-rm -rf .upstream .pc
+rm -rf .upstream .vanilla
 git clone --no-checkout "$UPSTREAM_URL" .upstream
 if ! git -C .upstream checkout "$SHA"; then
     echo "ERROR: SHA $SHA unreachable; re-resolve HEAD and overwrite upstream.ref:" >&2
@@ -26,15 +27,11 @@ if ! git -C .upstream checkout "$SHA"; then
     exit 1
 fi
 
-split_upstream "$REPO_ROOT/.upstream"
-# NB: quilt push -a exits 2 on the fully-applied noop, so judge by the
-# post-condition (empty unapplied list), not the exit code.
-quilt_run push -a --fuzz=0 || true
-if ! stack_full; then
-    echo "ERROR: stack not fully applied; .rej files and the failing patch are listed above." >&2
-    echo "Next step: bash scripts/edit-patch.sh <that-patch>" >&2
-    exit 1
-fi
+split_upstream "$REPO_ROOT/.upstream" "$REPO_ROOT/.vanilla"
+split_upstream "$REPO_ROOT/.upstream" "$REPO_ROOT"
+apply_patches "$REPO_ROOT"
+touch .vanilla/.patches-applied
 
-echo "Synced to $SHA; $(quilt --quiltrc - applied 2>/dev/null | wc -l) patch(es) applied."
+echo "Synced to $SHA; $(patch_count) per-file patch(es) applied."
 echo "Next step: mvn clean package"
+echo "Edit sources, then run: bash scripts/update-patches.sh"

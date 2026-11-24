@@ -1,0 +1,19 @@
+--- a/cron-utils-core/src/main/java/com/cronutils/model/CompositeCron.java
++++ b/cron-utils-core/src/main/java/com/cronutils/model/CompositeCron.java
+@@ -6,6 +6,7 @@
+ import com.cronutils.model.field.CronFieldName;
+ import com.cronutils.utils.Preconditions;
+ 
++import java.util.Arrays;
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.Map;
+@@ -49,7 +50,7 @@
+                 fieldbuilder.append(String.format("%s ", pattern.split(" ")[j]));
+             }
+             String fieldstring = fieldbuilder.toString().trim().replaceAll(" ", "|");
+-            if(split.splitAsStream(fieldstring).distinct().limit(2).count() <= 1){
++            if (Arrays.stream(split.split(fieldstring)).distinct().limit(2).count() <= 1) {
+                 fieldstring = split.split(fieldstring)[0];
+             }
+             builder.append(String.format("%s ", fieldstring));

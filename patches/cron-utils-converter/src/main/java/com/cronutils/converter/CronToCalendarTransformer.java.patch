@@ -1,0 +1,12 @@
+--- a/cron-utils-converter/src/main/java/com/cronutils/converter/CronToCalendarTransformer.java
++++ b/cron-utils-converter/src/main/java/com/cronutils/converter/CronToCalendarTransformer.java
+@@ -17,9 +17,6 @@
+ 
+ 	@Override
+ 	protected void transform() {
+-		LOGGER.debug(
+-				"Setting field '{}' from cron found at position '{}' to calendar field '{}'",
+-				cronFieldValue, cronFieldPosition, calendarField);
+ 		calendarInstance.set(calendarField, cronFieldValue);
+ 	}
+ }
