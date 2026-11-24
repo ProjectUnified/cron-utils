@@ -64,7 +64,7 @@ baseline) and the working module trees with every patch applied.
 | Edit code | `gitfile sync`, edit any module source, then `gitfile update` |
 | Add a file | create it under a module `src/`, then `gitfile update` (writes a `/dev/null` patch) |
 | Delete a file | `rm` it, then `gitfile update` (writes a deletion patch) |
-| Drop a change | restore the file to its pristine content, then `gitfile update` (the patch is removed) |
+| Drop a change | `gitfile revert <file-or-dir>` (restores from `.vanilla/` and removes its patch) |
 | Verify from scratch | `gitfile sync && mvn clean package` |
 | Export a combined patch for upstream | `gitfile export` (`cron-utils-fork.patch`, paths rewritten to upstream `src/`) |
 | Upgrade upstream | re-resolve `git ls-remote https://github.com/jmrozanec/cron-utils.git HEAD` into `upstream.ref`, then `gitfile sync`. Conflicting patches are three-way merged; resolve markers/`.rej` files and run `gitfile update` |
