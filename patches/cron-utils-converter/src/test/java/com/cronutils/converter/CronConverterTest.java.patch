@@ -1,0 +1,39 @@
+--- a/cron-utils-converter/src/test/java/com/cronutils/converter/CronConverterTest.java
++++ b/cron-utils-converter/src/test/java/com/cronutils/converter/CronConverterTest.java
+@@ -18,6 +18,8 @@ import org.junit.jupiter.params.provider.Arguments;
+ import org.junit.jupiter.params.provider.MethodSource;
+ 
+ import java.time.ZoneId;
++import java.time.ZoneOffset;
++import java.time.ZonedDateTime;
+ import java.util.stream.Stream;
+ 
+ import static org.junit.jupiter.api.Assertions.assertEquals;
+@@ -38,13 +40,25 @@ public class CronConverterTest {
+ 				Arguments.of("Asia/Colombo", "0/45 * * ? *", "0/45 * * ? *"),
+ 				Arguments.of("Australia/Eucla", "13 * * ? *", "28 * * ? *"),
+ 				Arguments.of("America/St_Johns", "0 0/15 * * * ?", "30 0/15 * * * ?"),
+-				Arguments.of("America/St_Johns", "0 8 * * ?", "30 10 * * ?"),
++				Arguments.of("America/St_Johns", "0 8 * * ?", stJohns(0, 8)),
+ 				Arguments.of("America/St_Johns", "0 0/1 * * ?", "30 0/1 * * ?"),
+-				Arguments.of("America/St_Johns", "20 0 * * ?", "50 2 * * ?"),
++				Arguments.of("America/St_Johns", "20 0 * * ?", stJohns(20, 0)),
+ 				Arguments.of("Asia/Kolkata", "20 0 * * ?", "50 18 * * ?")
+ 		);
+ 	}
+ 
++	/**
++	 * St. John's switches between NST (UTC-3:30) and NDT (UTC-2:30), so a
++	 * hard-coded expectation only holds half the year. Compute the UTC wall
++	 * time for today, matching the converter's Calendar-based offset.
++	 */
++	private static String stJohns(int minute, int hour) {
++		ZonedDateTime utc = ZonedDateTime.now(ZoneId.of("America/St_Johns"))
++				.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
++				.withZoneSameInstant(ZoneOffset.UTC);
++		return utc.getMinute() + " " + utc.getHour() + " * * ?";
++	}
++
+ 	@ParameterizedTest
+ 	@MethodSource("cronExpressions")
+ 	public void testCronConverterBuilder(String timezone, String inputCronExpression, String expectedCronExpression) {
